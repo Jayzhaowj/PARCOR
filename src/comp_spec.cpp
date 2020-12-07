@@ -21,7 +21,7 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
     int P = phi.n_slices; // P is the optimizied model order;
     int n_t = phi.n_cols; // the number of time points;
     int n_w = w.n_elem; // the number of frequency points;
-    
+
     // the variable storing all the information
     Rcpp::List sd1(n_t); // store the spectral density w/w.o time
     Rcpp::List sd2(n_t); // store partial directed coherence w/w.o time
@@ -29,20 +29,20 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
     arma::cx_cube f_spec(n_I, n_I, n_w, arma::fill::zeros);
     arma::cx_cube DTF_spec(n_I, n_I, n_w, arma::fill::zeros);
     arma::cx_cube kappa_spec(n_I, n_I, n_w, arma::fill::zeros);
-    
+
     // temperaroy variable;
     arma::cx_mat PHI(n_I, n_I, arma::fill::eye);
     arma::vec temp;
     arma::mat temp_phi;
     arma::cx_mat PHI_inv(n_I, n_I);
     arma::cx_mat PHI_conj_inv(n_I, n_I);
-    
-   
-    
+
+
+
     // some constants
     std::complex<double> ii(0, -2*M_PI);
     std::complex<double> exp_part;
-    
+
     for(int i = 0; i < n_t; i++){
         for(int j = 0; j < n_w; j++){
             PHI.eye();
@@ -51,7 +51,7 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
                 temp = phi(arma::span::all, arma::span(i), arma::span(k));
                 temp_phi = arma::conv_to<arma::mat>::from(temp);
                 temp_phi.reshape(n_I, n_I);
-                PHI = PHI - exp_part*temp_phi;
+                PHI = PHI - exp_part*arma::trans(temp_phi);
             }
             PHI_inv = arma::inv(PHI);
             PHI_conj_inv = arma::inv(arma::trans(PHI));
@@ -60,7 +60,7 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
             arma::cx_rowvec PHI_norm = arma::trans(arma::sqrt(PHI_norm_tmp.diag()));
             //partial directed coherence
             kappa_spec.slice(j) = PHI.each_row() / PHI_norm;
-            
+
             // compute directed transfer function
             arma::cx_mat PHI_inv_norm_tmp = PHI_inv * arma::trans(PHI_inv);
             arma::cx_colvec PHI_inv_norm = arma::sqrt(PHI_inv_norm_tmp.diag());
@@ -70,7 +70,7 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
         sd2(i) = kappa_spec;
         sd3(i) = DTF_spec;
     }
-    return Rcpp::List::create(Rcpp::Named("sd") = sd1, Rcpp::Named("PDC") = sd2, 
+    return Rcpp::List::create(Rcpp::Named("sd") = sd1, Rcpp::Named("PDC") = sd2,
                               Rcpp::Named("DTF") = sd3);
 }
 
@@ -84,7 +84,7 @@ arma::mat get_sd(Rcpp::List sd, int ts1, int ts2, int type){
     arma::mat f_spec(n_I, n_I);
     arma::mat g_spec(n_I, n_I);
     arma::mat sd_tf(n_t, n_w, arma::fill::zeros);
-    
+
     // Compute log spectral density of time series 1
     if(type == 1){
         for(int i = 0; i < n_t; i++){
@@ -95,7 +95,7 @@ arma::mat get_sd(Rcpp::List sd, int ts1, int ts2, int type){
             }
         }
     }
-    
+
     //
     if(type == 2){
         for(int i = 0; i < n_t; i++){
@@ -106,7 +106,7 @@ arma::mat get_sd(Rcpp::List sd, int ts1, int ts2, int type){
             }
         }
     }
-    
+
     if(type == 3){
         for(int i = 0; i < n_t; i++){
             f_sd = Rcpp::as<arma::cx_cube>(sd(i));

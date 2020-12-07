@@ -12,8 +12,8 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 
-Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA, 
-                        arma::vec w, int P_max, int ch1, 
+Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
+                        arma::vec w, int P_max, int ch1,
                         int ch2, bool time_depend = true){
   // phi is ar coefficient in array type;
   // SIGMA is innovation variance in matrix type;
@@ -26,7 +26,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
   int n_w = w.n_elem; // the number of frequency points;
   int index1 = ch1 - 1;
   int index2 = ch2 - 1;
-  
+
   // temperaroy variable;
   arma::cx_mat PHI(n_I, n_I, arma::fill::eye);
   arma::vec temp;
@@ -34,7 +34,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
   arma::cx_mat PHI_inv(n_I, n_I);
   arma::cx_mat PHI_conj_inv(n_I, n_I);
   arma::mat SIGMA_inv = arma::inv(SIGMA);
-  // f_spec and g_spec are spectral density and precision matrix. 
+  // f_spec and g_spec are spectral density and precision matrix.
   // f_dens and g_dens is the modulus of f_spec and g_spec;
   arma::cx_mat f_spec(n_I, n_I);
   arma::cx_mat g_spec(n_I, n_I);
@@ -61,7 +61,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
           temp = phi(arma::span::all, arma::span(i), arma::span(k));
           temp_phi = arma::conv_to<arma::mat>::from(temp);
           temp_phi.reshape(n_I, n_I);
-          PHI = PHI - exp_part*temp_phi;
+          PHI = PHI - exp_part*arma::trans(temp_phi);
         }
         PHI_inv = arma::inv(PHI);
         PHI_conj_inv = arma::inv(arma::trans(PHI));
@@ -69,22 +69,22 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
         arma::cx_rowvec PHI_norm = arma::trans(arma::sqrt(PHI_norm_tmp.diag()));
         arma::cx_mat PI_val = PHI.each_row() / PHI_norm;
         //arma::cx_mat kappa = arma::trans(PI_val) * SIGMA_inv * PI_val;
-        
-        
+
+
         // compute directed transfer function
         arma::cx_mat PHI_inv_norm_tmp = PHI_inv * arma::trans(PHI_inv);
         arma::cx_colvec PHI_inv_norm = arma::sqrt(PHI_inv_norm_tmp.diag());
         arma::cx_mat DTF = PHI_inv.each_col() / PHI_inv_norm;
         DTF_dens = abs(DTF); // directed transfer function
-        
-        
+
+
         f_spec = PHI_inv * SIGMA * PHI_conj_inv;
         g_spec = inv(f_spec);
         f_dens = abs(f_spec);
         g_dens = abs(g_spec);
-        kappa_dens = abs(PI_val); // partial directed coherence 
-        
-        
+        kappa_dens = abs(PI_val); // partial directed coherence
+
+
         sd1(i, j) = log(f_dens(index1, index1)); //spectral density of the first process
         sd2(i, j) = log(f_dens(index2, index2)); //spectral density of the second process
         sd3(i, j) = (f_dens(index1, index2)*f_dens(index1, index2))/(f_dens(index1, index1) * f_dens(index2, index2)); // squared coherence between two processes
@@ -125,16 +125,16 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
       arma::cx_rowvec PHI_norm = arma::trans(arma::sqrt(PHI_norm_tmp.diag()));
       arma::cx_mat PI_val = PHI.each_row() / PHI_norm;
       //arma::cx_mat kappa = arma::trans(PI_val) * SIGMA_inv * PI_val;
-      kappa_dens = abs(PI_val); // partial directed coherence 
-      
-      
+      kappa_dens = abs(PI_val); // partial directed coherence
+
+
       // compute directed transfer function
       arma::cx_mat PHI_inv_norm_tmp = PHI_inv * arma::trans(PHI_inv);
       arma::cx_colvec PHI_inv_norm = arma::sqrt(PHI_inv_norm_tmp.diag());
       arma::cx_mat DTF = PHI_inv.each_col() / PHI_inv_norm;
       DTF_dens = abs(DTF); // directed transfer function
-      
-      f_spec = PHI_inv * SIGMA * PHI_conj_inv; 
+
+      f_spec = PHI_inv * SIGMA * PHI_conj_inv;
       g_spec = inv(f_spec);
       f_dens = abs(f_spec);
       g_dens = abs(g_spec);
