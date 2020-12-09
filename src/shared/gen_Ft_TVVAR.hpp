@@ -10,7 +10,8 @@ arma::mat gen_Ft_TVVAR(arma::mat F1) {
     arma::vec F1_vec = arma::vectorise(F1_flip);
     arma::mat temp_I;
     temp_I.eye(n, n);
-    arma::mat F1t = arma::kron(F1_vec, temp_I);
+    //arma::mat F1t = arma::kron(F1_vec, temp_I);
+    arma::mat F1t = arma::kron(temp_I, F1_vec);
     return F1t;
 }
 
