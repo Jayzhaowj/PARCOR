@@ -56,7 +56,7 @@ run_parcor_parallel <- function(F1, delta, P, sample_size = 200L, chains = 1, DI
     cat("iterations: ", i, "/", P, "\n")
 
   }
-  ar_coef <- PAR_to_AR_fun(phi_fwd, phi_bwd, n_I)
+  ar_coef <- run_whittle(phi_fwd, phi_bwd, n_I)
   val_DIC <- 2*(cumsum(es_DIC) - ll_DIC)
   sfStop()
   return(list("phi_fwd" = phi_fwd,

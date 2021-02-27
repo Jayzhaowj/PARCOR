@@ -10,4 +10,4 @@ Encoding: UTF-8
 LazyData: true
 Depends: snowfall (>= 1.84-6.1)
 Imports: Rcpp (>= 1.0.1)
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, RcppDist

@@ -124,28 +124,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// run_parcor
-Rcpp::List run_parcor(arma::mat F1, arma::mat S_0, arma::cube delta, int P, int sample_size, int chains, bool DIC, bool backward, bool uncertainty);
-RcppExport SEXP _PARCOR_run_parcor(SEXP F1SEXP, SEXP S_0SEXP, SEXP deltaSEXP, SEXP PSEXP, SEXP sample_sizeSEXP, SEXP chainsSEXP, SEXP DICSEXP, SEXP backwardSEXP, SEXP uncertaintySEXP) {
+// run_whittle
+Rcpp::List run_whittle(arma::cube phi_fwd, arma::cube phi_bwd, int n_I);
+RcppExport SEXP _PARCOR_run_whittle(SEXP phi_fwdSEXP, SEXP phi_bwdSEXP, SEXP n_ISEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type F1(F1SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type S_0(S_0SEXP);
-    Rcpp::traits::input_parameter< arma::cube >::type delta(deltaSEXP);
-    Rcpp::traits::input_parameter< int >::type P(PSEXP);
-    Rcpp::traits::input_parameter< int >::type sample_size(sample_sizeSEXP);
-    Rcpp::traits::input_parameter< int >::type chains(chainsSEXP);
-    Rcpp::traits::input_parameter< bool >::type DIC(DICSEXP);
-    Rcpp::traits::input_parameter< bool >::type backward(backwardSEXP);
-    Rcpp::traits::input_parameter< bool >::type uncertainty(uncertaintySEXP);
-    rcpp_result_gen = Rcpp::wrap(run_parcor(F1, S_0, delta, P, sample_size, chains, DIC, backward, uncertainty));
+    Rcpp::traits::input_parameter< arma::cube >::type phi_fwd(phi_fwdSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type phi_bwd(phi_bwdSEXP);
+    Rcpp::traits::input_parameter< int >::type n_I(n_ISEXP);
+    rcpp_result_gen = Rcpp::wrap(run_whittle(phi_fwd, phi_bwd, n_I));
     return rcpp_result_gen;
 END_RCPP
 }
-// gen_AR_sample
-Rcpp::List gen_AR_sample(arma::cube phi_fwd, arma::cube phi_bwd, Rcpp::List Cnt_fwd, Rcpp::List Cnt_bwd, int n_I, int P_opt, int P_max, int h);
-RcppExport SEXP _PARCOR_gen_AR_sample(SEXP phi_fwdSEXP, SEXP phi_bwdSEXP, SEXP Cnt_fwdSEXP, SEXP Cnt_bwdSEXP, SEXP n_ISEXP, SEXP P_optSEXP, SEXP P_maxSEXP, SEXP hSEXP) {
+// sample_tvar_coef
+Rcpp::List sample_tvar_coef(arma::cube phi_fwd, arma::cube phi_bwd, Rcpp::List Cnt_fwd, Rcpp::List Cnt_bwd, int n_I, int P_opt, int P_max, int h);
+RcppExport SEXP _PARCOR_sample_tvar_coef(SEXP phi_fwdSEXP, SEXP phi_bwdSEXP, SEXP Cnt_fwdSEXP, SEXP Cnt_bwdSEXP, SEXP n_ISEXP, SEXP P_optSEXP, SEXP P_maxSEXP, SEXP hSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -157,20 +151,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type P_opt(P_optSEXP);
     Rcpp::traits::input_parameter< int >::type P_max(P_maxSEXP);
     Rcpp::traits::input_parameter< int >::type h(hSEXP);
-    rcpp_result_gen = Rcpp::wrap(gen_AR_sample(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h));
-    return rcpp_result_gen;
-END_RCPP
-}
-// PAR_to_AR_fun
-Rcpp::List PAR_to_AR_fun(arma::cube phi_fwd, arma::cube phi_bwd, int n_I);
-RcppExport SEXP _PARCOR_PAR_to_AR_fun(SEXP phi_fwdSEXP, SEXP phi_bwdSEXP, SEXP n_ISEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::cube >::type phi_fwd(phi_fwdSEXP);
-    Rcpp::traits::input_parameter< arma::cube >::type phi_bwd(phi_bwdSEXP);
-    Rcpp::traits::input_parameter< int >::type n_I(n_ISEXP);
-    rcpp_result_gen = Rcpp::wrap(PAR_to_AR_fun(phi_fwd, phi_bwd, n_I));
+    rcpp_result_gen = Rcpp::wrap(sample_tvar_coef(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -183,9 +164,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_filter_smooth_TVVAR", (DL_FUNC) &_PARCOR_filter_smooth_TVVAR, 9},
     {"_PARCOR_filter", (DL_FUNC) &_PARCOR_filter, 10},
     {"_PARCOR_filter_smooth", (DL_FUNC) &_PARCOR_filter_smooth, 11},
-    {"_PARCOR_run_parcor", (DL_FUNC) &_PARCOR_run_parcor, 9},
-    {"_PARCOR_gen_AR_sample", (DL_FUNC) &_PARCOR_gen_AR_sample, 8},
-    {"_PARCOR_PAR_to_AR_fun", (DL_FUNC) &_PARCOR_PAR_to_AR_fun, 3},
+    {"_PARCOR_run_whittle", (DL_FUNC) &_PARCOR_run_whittle, 3},
+    {"_PARCOR_sample_tvar_coef", (DL_FUNC) &_PARCOR_sample_tvar_coef, 8},
     {NULL, NULL, 0}
 };
 

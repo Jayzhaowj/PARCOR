@@ -3,17 +3,17 @@
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
-#include "dmvn_arma.hpp"
+#include <RcppDist.h>
 #include "gen_Ft_TVVAR.hpp"
 
-// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 
 
-Rcpp::List filter_TVVAR(arma::mat F1, 
-                  arma::mat G, 
+Rcpp::List filter_TVVAR(arma::mat F1,
+                  arma::mat G,
                   arma::mat mk_0,
                   arma::mat Ck_0,
-                  double n_0, 
+                  double n_0,
                   arma::mat S_0,
                   int m,
                   arma::mat delta,
@@ -62,13 +62,13 @@ Rcpp::List filter_TVVAR(arma::mat F1,
       Ct.slice(i) = Rt.slice(i) - At * Qt.slice(i) * arma::trans(At);
       mt.col(i) = at.col(i) + At * et;
       if(i >= pp){
-          arma::vec tmp_ll = dmvnrm_arma(arma::trans(F1.col(i)), arma::trans(ft.col(i)), Qt.slice(i), true);
+          arma::vec tmp_ll = dmvnorm(arma::trans(F1.col(i)),ft.col(i), Qt.slice(i), true);
           ll += arma::sum(tmp_ll);
       }
   }
   return Rcpp::List::create(Rcpp::Named("ll") = ll, Rcpp::Named("mt") = mt, Rcpp::Named("Ct") = Ct,
                             Rcpp::Named("Rt") = Rt, Rcpp::Named("at") = at, Rcpp::Named("ft") = ft,
-                            Rcpp::Named("F1t") = F1t, Rcpp::Named("yt") = F1, Rcpp::Named("Qt") = Qt, 
+                            Rcpp::Named("F1t") = F1t, Rcpp::Named("yt") = F1, Rcpp::Named("Qt") = Qt,
                             Rcpp::Named("St") = St);
 }
 

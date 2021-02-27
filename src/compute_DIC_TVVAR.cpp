@@ -1,6 +1,6 @@
 //
 //  compute_DIC_TVVAR.cpp
-//  
+//
 //
 //  Created by Wenjie Zhao on 1/16/19.
 //
@@ -11,8 +11,9 @@
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
-#include "shared/mvnorm.h"
-// [[Rcpp::depends(RcppArmadillo)]]
+#include <RcppDist.h>
+
+// [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 
 Rcpp::List compute_DIC_TVVAR(Rcpp::List temp_filter, int sample_size, arma::cube St, int P_max){

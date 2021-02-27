@@ -1,5 +1,5 @@
-#ifndef __PARCOR_to_AR__
-#define __PARCOR_to_AR__
+#ifndef __whittle_algorithm__
+#define __whittle_algorithm__
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
@@ -7,8 +7,9 @@
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
-Rcpp::List PARCOR_to_AR(arma::mat phi_forward, arma::mat phi_backward,
-                        arma::cube akm_prev, arma::cube dkm_prev, int n_I, int cur_level, int PP){
+Rcpp::List whittle_algorithm(arma::mat phi_forward, arma::mat phi_backward,
+                             arma::cube akm_prev, arma::cube dkm_prev,
+                             int n_I, int cur_level){
   int n_t = phi_forward.n_cols;
   int n_I2 = phi_forward.n_rows;
   arma::cube akm_cur(n_I2, n_t, cur_level + 1);
@@ -28,7 +29,6 @@ Rcpp::List PARCOR_to_AR(arma::mat phi_forward, arma::mat phi_backward,
       arma::mat dkm_i_prev = dkm_prev.slice(i);
       arma::mat akmm_i_prev = akm_prev.slice(cur_level - i - 1);
       arma::mat dkmm_i_prev = dkm_prev.slice(cur_level - i - 1);
-        //for(int j = PP; j < (n_t - PP); j++){
         for(int j = 0; j < n_t; j++){
         akm_temp.col(j) = akm_i_prev.col(j) - arma::trans(arma::vectorise(vec_to_mat(phi_forward.col(j), n_I, n_I) *  vec_to_mat(dkmm_i_prev.col(j), n_I, n_I), 1));
         dkm_temp.col(j) = dkm_i_prev.col(j) - arma::trans(arma::vectorise(vec_to_mat(phi_backward.col(j), n_I, n_I) * vec_to_mat(akmm_i_prev.col(j), n_I, n_I), 1));
@@ -41,4 +41,4 @@ Rcpp::List PARCOR_to_AR(arma::mat phi_forward, arma::mat phi_backward,
 }
 
 
-#endif // __PARCOR_to_AR__
+#endif // __whittle_algorithm__

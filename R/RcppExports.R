@@ -29,15 +29,11 @@ filter_smooth <- function(F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sampl
     .Call(`_PARCOR_filter_smooth`, F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sample_size, chains, uncertainty)
 }
 
-run_parcor <- function(F1, S_0, delta, P, sample_size, chains, DIC, backward, uncertainty) {
-    .Call(`_PARCOR_run_parcor`, F1, S_0, delta, P, sample_size, chains, DIC, backward, uncertainty)
+run_whittle <- function(phi_fwd, phi_bwd, n_I) {
+    .Call(`_PARCOR_run_whittle`, phi_fwd, phi_bwd, n_I)
 }
 
-gen_AR_sample <- function(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h) {
-    .Call(`_PARCOR_gen_AR_sample`, phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h)
-}
-
-PAR_to_AR_fun <- function(phi_fwd, phi_bwd, n_I) {
-    .Call(`_PARCOR_PAR_to_AR_fun`, phi_fwd, phi_bwd, n_I)
+sample_tvar_coef <- function(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h) {
+    .Call(`_PARCOR_sample_tvar_coef`, phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h)
 }
 
