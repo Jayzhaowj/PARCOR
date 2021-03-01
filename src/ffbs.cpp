@@ -104,6 +104,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
 
     at.col(i) = F2*akt.col(i);
     Rt.slice(i) = F2*Rkt.slice(i)*arma::trans(F2)/delta2;
+    Rt.slice(i) = 0.5*Rt.slice(i) + 0.5*arma::trans(Rt.slice(i));
     V2t.slice(i) = (1 - delta2)/delta2 * F2 * Rkt.slice(i) * arma::trans(F2);
 
     // predictive distribution update
