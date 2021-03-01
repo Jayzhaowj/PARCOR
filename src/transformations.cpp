@@ -1,4 +1,5 @@
-// TV-VPARCOR model
+// TV-VPARCOR model and hierarchical dynamic PARCOR model
+//
 
 
 
@@ -6,9 +7,7 @@
 #include <Rcpp.h>
 #include <RcppDist.h>
 #include "shared/whittle_algorithm.hpp"
-
-
-
+#include "shared/dl_algorithm.hpp"
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
@@ -80,6 +79,32 @@ Rcpp::List  sample_tvar_coef(arma::cube phi_fwd,
       akm_prev = Rcpp::as<arma::cube>(ar_coef_prev["forward"]);
       dkm_prev = Rcpp::as<arma::cube>(ar_coef_prev["backward"]);
       ar_coef(i) = whittle_algorithm(phi_fwd_sample, phi_bwd_sample, akm_prev, dkm_prev, n_I, i);
+    }
+  }
+  return ar_coef;
+}
+
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+
+Rcpp::List run_dl(arma::cube phi_fwd, arma::cube phi_bwd){
+  int n_t = phi_fwd.n_cols;
+  int P = phi_fwd.n_slices;
+  int n_I = phi_fwd.n_rows;
+  arma::cube akm_prev(n_I, n_t, P);
+  arma::cube dkm_prev(n_I, n_t, P);
+  Rcpp::List ar_coef_prev;
+  Rcpp::List ar_coef(P);
+  for(int i = 0; i < P; i++){
+    if(i == 0){
+      ar_coef(i) = dl_algorithm(phi_fwd.slice(i), phi_bwd.slice(i), akm_prev, dkm_prev, i);
+    }else{
+      ar_coef_prev = ar_coef(i - 1);
+      akm_prev = Rcpp::as<arma::cube>(ar_coef_prev["forward"]);
+      dkm_prev = Rcpp::as<arma::cube>(ar_coef_prev["backward"]);
+      ar_coef(i) = dl_algorithm(phi_fwd.slice(i), phi_bwd.slice(i), akm_prev, dkm_prev, i);
     }
   }
   return ar_coef;

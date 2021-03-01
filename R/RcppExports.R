@@ -9,12 +9,24 @@ get_sd <- function(sd, ts1, ts2, type) {
     .Call(`_PARCOR_get_sd`, sd, ts1, ts2, type)
 }
 
+cp_sd_uni <- function(phi, sigma2, w) {
+    .Call(`_PARCOR_cp_sd_uni`, phi, sigma2, w)
+}
+
 compute_DIC_TVVAR <- function(temp_filter, sample_size, St, P_max) {
     .Call(`_PARCOR_compute_DIC_TVVAR`, temp_filter, sample_size, St, P_max)
 }
 
 compute_spec <- function(phi, SIGMA, w, P_max, ch1, ch2, time_depend = TRUE) {
     .Call(`_PARCOR_compute_spec`, phi, SIGMA, w, P_max, ch1, ch2, time_depend)
+}
+
+forward_filter_backward_smooth <- function(yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size, uncertainty) {
+    .Call(`_PARCOR_forward_filter_backward_smooth`, yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size, uncertainty)
+}
+
+ffbs_DIC <- function(yt, F1, F2, n_t, I, m, type, P, delta, DIC, sample_size, chains, uncertainty) {
+    .Call(`_PARCOR_ffbs_DIC`, yt, F1, F2, n_t, I, m, type, P, delta, DIC, sample_size, chains, uncertainty)
 }
 
 filter_smooth_TVVAR <- function(F1, G, mk_0, Ck_0, n_0, S_0, m, delta, pp) {
@@ -35,5 +47,9 @@ run_whittle <- function(phi_fwd, phi_bwd, n_I) {
 
 sample_tvar_coef <- function(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h) {
     .Call(`_PARCOR_sample_tvar_coef`, phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_max, h)
+}
+
+run_dl <- function(phi_fwd, phi_bwd) {
+    .Call(`_PARCOR_run_dl`, phi_fwd, phi_bwd)
 }
 

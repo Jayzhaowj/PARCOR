@@ -1,10 +1,10 @@
 Package: PARCOR
 Type: Package
 Title: Bayesian PARCOR Model
-Version: 1.0-6
+Version: 1.1-1
 Author: Wenjie Zhao
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: Provides routines for Kalman filtering and smoothing, and Bayesian analysis of Dynamic Linear Models under partial autocorrelation domain.
+Maintainer: Wenjie Zhao <wzhao24@ucsc.edu>
+Description: Provides routines for Kalman filtering and smoothing, and Bayesian analysis of Dynamic Linear Models under partial autocorrelation domain. Also including dynamic hierarchical PARCOR model.
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
