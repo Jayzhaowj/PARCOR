@@ -221,17 +221,14 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
   arma::cube mnt_sample(sample_size, n_I, n_t, arma::fill::zeros);
   arma::cube mnkt_sample(sample_size, n_I, n_t, arma::fill::zeros);
   // asign the lower bound and upper bound
-  int sign = 1;
   int ubound = 0;
   int lbound = 0;
   if(type == 1){
     ubound = n_t;
     lbound = m;
-    sign = 1;
   }else{
     ubound = n_t - m;
     lbound = 0;
-    sign = -1;
   }
 
 
