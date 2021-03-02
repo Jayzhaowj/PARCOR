@@ -34,12 +34,38 @@ hparcor <- function(yt, delta, P, F2,
                          F1 = t(resid_bwd[, , j]), F2 = F2,
                          n_t = n_t, I = I, m = j, type = 1, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
-                         chains = chains, uncertainty=TRUE)
+                         chains = chains, uncertainty=uncertainty)
+    # if (best_fwd$success_vals$success == FALSE){
+    #   stop(paste0("The sampler failed at iteration ",
+    #               best_fwd$success_vals$fail_iter,
+    #               " while trying to ",
+    #               best_fwd$success_vals$fail, ". ",
+    #               "Try rerunning the model. ",
+    #               "If the sampler fails again, try changing the prior to be more informative. ",
+    #               "If the problem still persists, please contact the maintainer: "))
+    # } else {
+    #   best_fwd$success_vals <- NULL
+    # }
+
+
     best_bwd <- ffbs_DIC(yt = t(resid_bwd[, , j]),
                          F1 = t(resid_fwd[, , j]), F2 = F2,
                          n_t = n_t, I = I, m = j, type = 0, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
-                         chains = chains, uncertainty=TRUE)
+                         chains = chains, uncertainty=uncertainty)
+
+    # if (best_bwd$success_vals$success == FALSE){
+    #   stop(paste0("The sampler failed at iteration ",
+    #               best_bwd$success_vals$fail_iter,
+    #               " while trying to ",
+    #               best_bwd$success_vals$fail, ". ",
+    #               "Try rerunning the model. ",
+    #               "If the sampler fails again, try changing the prior to be more informative. ",
+    #               "If the problem still persists, please contact the maintainer: "))
+    # } else {
+    #   best_bwd$success_vals <- NULL
+    # }
+
 
     phi_fwd_sample[, , , j] <- best_fwd$mnt_sample
     phi_bwd_sample[, , , j] <- best_bwd$mnt_sample

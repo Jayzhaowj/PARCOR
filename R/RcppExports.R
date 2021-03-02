@@ -21,8 +21,8 @@ compute_spec <- function(phi, SIGMA, w, P_max, ch1, ch2, time_depend = TRUE) {
     .Call(`_PARCOR_compute_spec`, phi, SIGMA, w, P_max, ch1, ch2, time_depend)
 }
 
-forward_filter_backward_smooth <- function(yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size, uncertainty) {
-    .Call(`_PARCOR_forward_filter_backward_smooth`, yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size, uncertainty)
+forward_filter_backward_smooth <- function(yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size) {
+    .Call(`_PARCOR_forward_filter_backward_smooth`, yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size)
 }
 
 ffbs_DIC <- function(yt, F1, F2, n_t, I, m, type, P, delta, DIC, sample_size, chains, uncertainty) {
