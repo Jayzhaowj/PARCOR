@@ -173,11 +173,11 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
 
     mnt.col(i) = mt.col(i) + Bnt.slice(i)*(mnt.col(i+1) - at.col(i+1));
     Cnt.slice(i) = St(ubound-1)/St(i)*(Ct.slice(i) - Bnt.slice(i)*(Rt.slice(i+1) - Cnt.slice(i+1))*arma::trans(Bnt.slice(i)));
-    //Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
+    Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
 
     mnkt.col(i) = mkt.col(i) + Bnkt.slice(i)*(mnkt.col(i+1) - akt.col(i+1));
     Cnkt.slice(i) = St(ubound-1)/St(i)*(Ckt.slice(i) - Bnkt.slice(i)*(Rkt.slice(i+1) - Cnkt.slice(i+1))*arma::trans(Bnkt.slice(i)));
-    //Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
+    Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
 
   }
 
@@ -193,8 +193,8 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
                             Rcpp::Named("mnkt") = mnkt,
                             Rcpp::Named("Cnt") = Cnt,
                             Rcpp::Named("Cnkt") = Cnkt,
-                            // Rcpp::Named("mt") = mt,
-                            // Rcpp::Named("Ct") = mnkt_sample,
+                            Rcpp::Named("mt") = mt,
+                            Rcpp::Named("Ct") = Ct,
                             Rcpp::Named("akt") = akt,
                             Rcpp::Named("Rkt") = Rkt,
                             Rcpp::Named("Rt") = Rt,
@@ -213,10 +213,12 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
   arma::mat mnkt = result["mnkt"];
   arma::cube Cnt = result["Cnt"];
   arma::cube Cnkt = result["Cnkt"];
+  arma::cube Ct = result["Ct"];
   arma::vec nt = result["nt"];
+
   int n_t = mnt.n_cols;
   int n_I = mnt.n_rows;
-
+  arma::mat I_n(n_I, n_I, arma::fill::eye);
   arma::cube mnt_sample(sample_size, n_I, n_t, arma::fill::zeros);
   arma::cube mnkt_sample(sample_size, n_I, n_t, arma::fill::zeros);
   // asign the lower bound and upper bound
@@ -224,18 +226,26 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
   int lbound = 0;
   if(type == 1){
     ubound = n_t;
-    lbound = m;
+    lbound = P;
   }else{
-    ubound = n_t - m;
+    ubound = n_t - P;
     lbound = 0;
   }
-
+  double jitter = 1e-1;
 
 
   for(int i = lbound; i < ubound; i++){
-    Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
-    mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Cnt.slice(i), nt(ubound-1));
-    Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
+    //Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
+    try{
+      mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Cnt.slice(i), nt(ubound-1));
+    }catch(...){
+      mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Ct.slice(i), nt(ubound-1));
+      Rprintf("\n mnt iteration: %i", i);
+      Rcout << "\n Cnt is" << std::endl << Cnt.slice(i) << std::endl;
+      Rcout << "\n Ct is" << std::endl << Ct.slice(i) << std::endl;
+    }
+
+    //Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
     mnkt_sample.slice(i) = rmvt(sample_size, mnkt.col(i), Cnkt.slice(i), nt(ubound-1));
   }
   return Rcpp::List::create(Rcpp::Named("mnt_sample") = mnt_sample,
