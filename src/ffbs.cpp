@@ -231,7 +231,7 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
     ubound = n_t - P;
     lbound = 0;
   }
-  double jitter = 1e-1;
+  //double jitter = 1e-1;
 
 
   for(int i = lbound; i < ubound; i++){
