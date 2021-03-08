@@ -67,10 +67,12 @@ hparcor <- function(yt, delta, P, F2,
     # }
 
 
-    phi_fwd_sample[, , , j] <- best_fwd$mnt_sample
-    phi_bwd_sample[, , , j] <- best_bwd$mnt_sample
-    mu_fwd_sample[, , , j] <- best_fwd$mnkt_sample
-    mu_bwd_sample[, , , j] <- best_bwd$mnkt_sample
+    if(uncertainty){
+      phi_fwd_sample[, , , j] <- best_fwd$mnt_sample
+      phi_bwd_sample[, , , j] <- best_bwd$mnt_sample
+      mu_fwd_sample[, , , j] <- best_fwd$mnkt_sample
+      mu_bwd_sample[, , , j] <- best_bwd$mnkt_sample
+    }
 
     pDIC_fwd[j] <- best_fwd$pDIC
     pDIC_bwd[j] <- best_bwd$pDIC

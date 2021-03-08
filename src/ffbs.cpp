@@ -100,7 +100,12 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     at.col(i) = F2*akt.col(i);
     Rt.slice(i) = F2*Rkt.slice(i)*arma::trans(F2)/delta2;
     Rt.slice(i) = 0.5*Rt.slice(i) + 0.5*arma::trans(Rt.slice(i));
-    V2t.slice(i) = (1 - delta2)/delta2 * F2 * Rkt.slice(i) * arma::trans(F2);
+    if(i == lbound){
+      V2t.slice(i) = ((1 - delta2)/delta2) * F2 * Rkt.slice(i) * arma::trans(F2)/S_0;
+    }else{
+      V2t.slice(i) = ((1 - delta2)/delta2) * F2 * Rkt.slice(i) * arma::trans(F2)/St(i-1);
+    }
+
 
     // predictive distribution update
     ft.col(i) = F1t.slice(i) * at.col(i);
@@ -159,7 +164,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
   mnkt.col(ubound-1) = mkt.col(ubound-1);
   Cnkt.slice(ubound-1) = Ckt.slice(ubound-1);
   for(int i = (ubound - 2); i > lbound - 1; i--){
-    arma::mat V02t_s = St(ubound-1) * I_n + F1t.slice(i)*V2t.slice(i)*arma::trans(F1t.slice(i));
+    arma::mat V02t_s = I_n + F1t.slice(i)*V2t.slice(i)*arma::trans(F1t.slice(i));
     arma::mat inv_V02t_s = arma::inv_sympd(0.5*V02t_s + 0.5*arma::trans(V02t_s));
 
     Ant.slice(i) = F2*Ckt.slice(i)*arma::trans((I_n - V2t.slice(i)*arma::trans(F1t.slice(i))*inv_V02t_s*F1t.slice(i))*F2);
@@ -172,11 +177,11 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     Bnt.slice(i) = arma::trans(Ant.slice(i))*inv_Rtp1;
 
     mnt.col(i) = mt.col(i) + Bnt.slice(i)*(mnt.col(i+1) - at.col(i+1));
-    Cnt.slice(i) = St(ubound-1)/St(i)*(Ct.slice(i) - Bnt.slice(i)*(Rt.slice(i+1) - Cnt.slice(i+1))*arma::trans(Bnt.slice(i)));
+    Cnt.slice(i) = St(ubound-1)/St(i)*(Ct.slice(i) - Bnt.slice(i)*(Rt.slice(i+1) - Cnt.slice(i+1)*St(i)/St(ubound-1))*arma::trans(Bnt.slice(i)));
     Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
 
     mnkt.col(i) = mkt.col(i) + Bnkt.slice(i)*(mnkt.col(i+1) - akt.col(i+1));
-    Cnkt.slice(i) = St(ubound-1)/St(i)*(Ckt.slice(i) - Bnkt.slice(i)*(Rkt.slice(i+1) - Cnkt.slice(i+1))*arma::trans(Bnkt.slice(i)));
+    Cnkt.slice(i) = St(ubound-1)/St(i)*(Ckt.slice(i) - Bnkt.slice(i)*(Rkt.slice(i+1) - Cnkt.slice(i+1)*St(i)/St(ubound-1))*arma::trans(Bnkt.slice(i)));
     Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
 
   }
