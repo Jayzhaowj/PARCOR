@@ -236,21 +236,18 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
     ubound = n_t - P;
     lbound = 0;
   }
-  //double jitter = 1e-1;
+
 
 
   for(int i = lbound; i < ubound; i++){
-    //Cnt.slice(i) = 0.5*Cnt.slice(i) + 0.5*arma::trans(Cnt.slice(i));
     try{
       mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Cnt.slice(i), nt(ubound-1));
     }catch(...){
-      mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Ct.slice(i), nt(ubound-1));
-      Rprintf("\n mnt iteration: %i", i);
-      Rcout << "\n Cnt is" << std::endl << Cnt.slice(i) << std::endl;
-      Rcout << "\n Ct is" << std::endl << Ct.slice(i) << std::endl;
+      //mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Ct.slice(i), nt(ubound-1));
+      Rprintf("\n The sampler failed at iteration  ", i);
+
     }
 
-    //Cnkt.slice(i) = 0.5*Cnkt.slice(i) + 0.5*arma::trans(Cnkt.slice(i));
     mnkt_sample.slice(i) = rmvt(sample_size, mnkt.col(i), Cnkt.slice(i), nt(ubound-1));
   }
   return Rcpp::List::create(Rcpp::Named("mnt_sample") = mnt_sample,
