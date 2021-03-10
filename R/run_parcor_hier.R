@@ -2,69 +2,75 @@
 ###### run dynamic hierarchical PARCOR model
 #############################################
 
-hparcor <- function(yt, delta, P, F2,
+hparcor <- function(yt, delta, P,
                     sample_size = 1000L,
                     chains = 1, DIC = TRUE, uncertainty = TRUE){
+  ### number of time point
   n_t <- dim(yt)[1]
-  I <- dim(yt)[2]
-  resid_fwd <- array(0, dim = c(n_t, I, P+1))
-  resid_bwd <- array(0, dim = c(n_t, I, P+1))
-  resid_fwd[, , 1] <- yt
-  resid_bwd[, , 1] <- yt
-  phi_fwd <- array(0, dim = c(I, n_t, P))
-  phi_bwd <- array(0, dim = c(I, n_t, P))
-  mu_fwd <- array(0, dim = c(I, n_t, P))
-  mu_bwd <- array(0, dim = c(I, n_t, P))
+  ### number of time series
+  n_I <- dim(yt)[2]
+  ### number of discount factor options
+  num_delta <- dim(delta)[1]
+
+  ### generate matrix F2
+  F2_m <- data.frame(a=gl(n_I, 1))
+  F2 <- as.matrix(model.matrix(~a, F2_m, contrasts=list(a="contr.sum")))
+
+
+  ### default delta
+  seq_delta <- seq(0.99, 0.999, by = 0.001)
+  default_delta <- as.matrix(expand.grid(seq_delta, seq_delta))
+  if(missing(delta)){
+    delta <- default_delta
+  }
+
+  ### storage of variables
+  resid_fwd <- array(0, dim = c(n_t, n_I, P+1))
+  resid_bwd <- array(0, dim = c(n_t, n_I, P+1))
+
+  phi_fwd <- array(0, dim = c(n_I, n_t, P))
+  phi_bwd <- array(0, dim = c(n_I, n_t, P))
+
+  mu_fwd <- array(0, dim = c(n_I, n_t, P))
+  mu_bwd <- array(0, dim = c(n_I, n_t, P))
+
   sigma2t_fwd <- matrix(0, nrow = n_t, ncol = P)
   sigma2t_bwd <- matrix(0, nrow = n_t, ncol = P)
-  num_delta <- dim(delta)[1]
+
   best_delta_fwd <- matrix(0, nrow = P, ncol = 2)
   best_delta_bwd <- matrix(0, nrow = P, ncol = 2)
+
   best_pred_dens_fwd <- numeric(P)
   best_pred_dens_bwd <- numeric(P)
+
   pDIC_fwd <- numeric(P)
   pDIC_bwd <- numeric(P)
 
-  phi_fwd_sample <- array(NA, dim = c(sample_size, I, n_t, P))
-  phi_bwd_sample <- array(NA, dim = c(sample_size, I, n_t, P))
-  mu_fwd_sample <- array(NA, dim = c(sample_size, I, n_t, P))
-  mu_bwd_sample <- array(NA, dim = c(sample_size, I, n_t, P))
+  phi_fwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
+  phi_bwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
+
+  mu_fwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
+  mu_bwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
+
+  ### initialization
+  resid_fwd[, , 1] <- yt
+  resid_bwd[, , 1] <- yt
+
   for(j in 1:P){
+    ## forward
     best_fwd <- ffbs_DIC(yt = t(resid_fwd[, , j]),
                          F1 = t(resid_bwd[, , j]), F2 = F2,
-                         n_t = n_t, I = I, m = j, type = 1, P = P,
+                         n_t = n_t, n_I = n_I, m = j, type = 1, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
                          chains = chains, uncertainty=uncertainty)
-    # if (best_fwd$success_vals$success == FALSE){
-    #   stop(paste0("The sampler failed at iteration ",
-    #               best_fwd$success_vals$fail_iter,
-    #               " while trying to ",
-    #               best_fwd$success_vals$fail, ". ",
-    #               "Try rerunning the model. ",
-    #               "If the sampler fails again, try changing the prior to be more informative. ",
-    #               "If the problem still persists, please contact the maintainer: "))
-    # } else {
-    #   best_fwd$success_vals <- NULL
-    # }
 
-
+    ## backward
     best_bwd <- ffbs_DIC(yt = t(resid_bwd[, , j]),
                          F1 = t(resid_fwd[, , j]), F2 = F2,
-                         n_t = n_t, I = I, m = j, type = 0, P = P,
+                         n_t = n_t, n_I = n_I, m = j, type = 0, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
                          chains = chains, uncertainty=uncertainty)
 
-    # if (best_bwd$success_vals$success == FALSE){
-    #   stop(paste0("The sampler failed at iteration ",
-    #               best_bwd$success_vals$fail_iter,
-    #               " while trying to ",
-    #               best_bwd$success_vals$fail, ". ",
-    #               "Try rerunning the model. ",
-    #               "If the sampler fails again, try changing the prior to be more informative. ",
-    #               "If the problem still persists, please contact the maintainer: "))
-    # } else {
-    #   best_bwd$success_vals <- NULL
-    # }
 
 
     if(uncertainty){
@@ -74,16 +80,13 @@ hparcor <- function(yt, delta, P, F2,
       mu_bwd_sample[, , , j] <- best_bwd$mnkt_sample
     }
 
+    ## retrieve the results
     pDIC_fwd[j] <- best_fwd$pDIC
     pDIC_bwd[j] <- best_bwd$pDIC
     best_delta_fwd[j, ] <- best_fwd$delta
     best_delta_bwd[j, ] <- best_bwd$delta
     best_pred_dens_fwd[j] <- best_fwd$ll
     best_pred_dens_bwd[j] <- best_bwd$ll
-
-    ### obtain (j+1) residuals
-    resid_fwd[, , j+1] <- t(best_fwd$residuals)
-    resid_bwd[, , j+1] <- t(best_bwd$residuals)
     phi_fwd[, , j] <- best_fwd$mnt
     phi_bwd[, , j] <- best_bwd$mnt
     mu_fwd[, , j] <- best_fwd$mnkt
@@ -92,7 +95,12 @@ hparcor <- function(yt, delta, P, F2,
     sigma2t_bwd[, j] <- best_bwd$sigma2t
     DIC_fwd <- 2*(cumsum(pDIC_fwd) - best_pred_dens_fwd)
     DIC_bwd <- 2*(cumsum(pDIC_bwd) - best_pred_dens_bwd)
-    cat('\niter: ', j)
+
+    ### obtain (j+1) residuals
+    resid_fwd[, , j+1] <- t(best_fwd$residuals)
+    resid_bwd[, , j+1] <- t(best_bwd$residuals)
+
+    cat('\nThe current iteration: ', j, "/", P)
 
 
   }

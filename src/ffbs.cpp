@@ -19,15 +19,15 @@ using namespace Rcpp;
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat F2,
-                                          int n_t, int I, int m, int type, int P,
+                                          int n_t, int n_I, int m, int type, int P,
                                           double delta1, double delta2, int sample_size){
   // some constants
   int sign = 1;
-  arma::mat I_n(I, I, arma::fill::eye);
+  arma::mat I_n(n_I, n_I, arma::fill::eye);
   // initial states
-  arma::colvec mk_0(I, arma::fill::zeros);
-  arma::mat Ck_0(I, I, arma::fill::eye);
-  //arma::mat Ck_s_0(I, I, arma::fill::eye);
+  arma::colvec mk_0(n_I, arma::fill::zeros);
+  arma::mat Ck_0(n_I, n_I, arma::fill::eye);
+  //arma::mat Ck_s_0(n_I, n_I, arma::fill::eye);
   double n_0 = 1;
   double S_0 = 1;
   double ll = 0.0;
@@ -36,36 +36,36 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
   arma::vec St(n_t, arma::fill::zeros);
 
   // parcor states
-  arma::mat at(I, n_t, arma::fill::zeros);
-  arma::mat mt(I, n_t, arma::fill::zeros);
-  arma::mat ft(I, n_t, arma::fill::zeros);
-  arma::mat et(I, n_t, arma::fill::zeros);
+  arma::mat at(n_I, n_t, arma::fill::zeros);
+  arma::mat mt(n_I, n_t, arma::fill::zeros);
+  arma::mat ft(n_I, n_t, arma::fill::zeros);
+  arma::mat et(n_I, n_t, arma::fill::zeros);
 
-  arma::cube Rt(I, I, n_t, arma::fill::zeros);
-  arma::cube Ct(I, I, n_t, arma::fill::zeros);
-  arma::cube Ut(I, I, n_t, arma::fill::zeros);
-  arma::cube Qt(I, I, n_t, arma::fill::zeros);
-  arma::cube inv_Qt(I, I, n_t, arma::fill::zeros);
+  arma::cube Rt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ct(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ut(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Qt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube inv_Qt(n_I, n_I, n_t, arma::fill::zeros);
 
   //structure level
-  arma::mat akt(I, n_t, arma::fill::zeros);
-  arma::mat mkt(I, n_t, arma::fill::zeros);
-  arma::cube Rkt(I, I, n_t, arma::fill::zeros);
-  arma::cube Ckt(I, I, n_t, arma::fill::zeros);
-  arma::cube V2t(I, I, n_t, arma::fill::zeros);
-  arma::cube Ukt(I, I, n_t, arma::fill::zeros);
-  arma::cube F1t(I, I, n_t, arma::fill::zeros);
+  arma::mat akt(n_I, n_t, arma::fill::zeros);
+  arma::mat mkt(n_I, n_t, arma::fill::zeros);
+  arma::cube Rkt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ckt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube V2t(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ukt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube F1t(n_I, n_I, n_t, arma::fill::zeros);
 
   // smooth part
-  arma::mat mnt(I, n_t, arma::fill::zeros);
-  arma::cube Cnt(I, I, n_t, arma::fill::zeros);
-  arma::mat mnkt(I, n_t, arma::fill::zeros);
-  arma::cube Cnkt(I, I, n_t, arma::fill::zeros);
-  arma::cube Ant(I, I, n_t, arma::fill::zeros);
-  arma::cube Ankt(I, I, n_t, arma::fill::zeros);
-  arma::cube Bnt(I, I, n_t, arma::fill::zeros);
-  arma::cube Bnkt(I, I, n_t, arma::fill::zeros);
-  arma::mat resid(I, n_t, arma::fill::zeros);
+  arma::mat mnt(n_I, n_t, arma::fill::zeros);
+  arma::cube Cnt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::mat mnkt(n_I, n_t, arma::fill::zeros);
+  arma::cube Cnkt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ant(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Ankt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Bnt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::cube Bnkt(n_I, n_I, n_t, arma::fill::zeros);
+  arma::mat resid(n_I, n_t, arma::fill::zeros);
 
 
   // asign the lower bound and upper bound
@@ -128,7 +128,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
       St(i) = S_0;
       dt(i) = n_0*S_0;
     }else{
-      nt(i) = nt(i-1) + I;
+      nt(i) = nt(i-1) + n_I;
       dt(i) = dt(i-1) + St(i-1)*arma::as_scalar(arma::trans(et.col(i)) * inv_Qt.slice(i) * et.col(i));
       St(i) = dt(i)/nt(i);
     }
@@ -259,7 +259,7 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
-                    int n_t, int I, int m, int type, int P,
+                    int n_t, int n_I, int m, int type, int P,
                     arma::mat delta, bool DIC, int sample_size,
                     int chains, bool uncertainty){
   // do ffbs
@@ -267,7 +267,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
   double ll_DIC = 0.0;
   double pDIC = 0.0;
   Rcpp::List result_opt = forward_filter_backward_smooth(yt, F1, F2,
-                                                         n_t, I, m,  type, P,
+                                                         n_t, n_I, m,  type, P,
                                                          delta(0, 0), delta(0, 1),
                                                          sample_size);
   double ll_max = result_opt["ll"];
@@ -275,7 +275,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
 
   for(int i = 1; i < delta_n; i++){
     Rcpp::List result_new = forward_filter_backward_smooth(yt, F1, F2,
-                                                           n_t, I, m,  type, P,
+                                                           n_t, n_I, m,  type, P,
                                                            delta(i, 0), delta(i, 1),
                                                            sample_size);
     double ll_new = result_new["ll"];

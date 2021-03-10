@@ -78,8 +78,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // forward_filter_backward_smooth
-Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat F2, int n_t, int I, int m, int type, int P, double delta1, double delta2, int sample_size);
-RcppExport SEXP _PARCOR_forward_filter_backward_smooth(SEXP ytSEXP, SEXP F1SEXP, SEXP F2SEXP, SEXP n_tSEXP, SEXP ISEXP, SEXP mSEXP, SEXP typeSEXP, SEXP PSEXP, SEXP delta1SEXP, SEXP delta2SEXP, SEXP sample_sizeSEXP) {
+Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat F2, int n_t, int n_I, int m, int type, int P, double delta1, double delta2, int sample_size);
+RcppExport SEXP _PARCOR_forward_filter_backward_smooth(SEXP ytSEXP, SEXP F1SEXP, SEXP F2SEXP, SEXP n_tSEXP, SEXP n_ISEXP, SEXP mSEXP, SEXP typeSEXP, SEXP PSEXP, SEXP delta1SEXP, SEXP delta2SEXP, SEXP sample_sizeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -87,20 +87,20 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type F1(F1SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type F2(F2SEXP);
     Rcpp::traits::input_parameter< int >::type n_t(n_tSEXP);
-    Rcpp::traits::input_parameter< int >::type I(ISEXP);
+    Rcpp::traits::input_parameter< int >::type n_I(n_ISEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type type(typeSEXP);
     Rcpp::traits::input_parameter< int >::type P(PSEXP);
     Rcpp::traits::input_parameter< double >::type delta1(delta1SEXP);
     Rcpp::traits::input_parameter< double >::type delta2(delta2SEXP);
     Rcpp::traits::input_parameter< int >::type sample_size(sample_sizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(forward_filter_backward_smooth(yt, F1, F2, n_t, I, m, type, P, delta1, delta2, sample_size));
+    rcpp_result_gen = Rcpp::wrap(forward_filter_backward_smooth(yt, F1, F2, n_t, n_I, m, type, P, delta1, delta2, sample_size));
     return rcpp_result_gen;
 END_RCPP
 }
 // ffbs_DIC
-Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2, int n_t, int I, int m, int type, int P, arma::mat delta, bool DIC, int sample_size, int chains, bool uncertainty);
-RcppExport SEXP _PARCOR_ffbs_DIC(SEXP ytSEXP, SEXP F1SEXP, SEXP F2SEXP, SEXP n_tSEXP, SEXP ISEXP, SEXP mSEXP, SEXP typeSEXP, SEXP PSEXP, SEXP deltaSEXP, SEXP DICSEXP, SEXP sample_sizeSEXP, SEXP chainsSEXP, SEXP uncertaintySEXP) {
+Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2, int n_t, int n_I, int m, int type, int P, arma::mat delta, bool DIC, int sample_size, int chains, bool uncertainty);
+RcppExport SEXP _PARCOR_ffbs_DIC(SEXP ytSEXP, SEXP F1SEXP, SEXP F2SEXP, SEXP n_tSEXP, SEXP n_ISEXP, SEXP mSEXP, SEXP typeSEXP, SEXP PSEXP, SEXP deltaSEXP, SEXP DICSEXP, SEXP sample_sizeSEXP, SEXP chainsSEXP, SEXP uncertaintySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -108,7 +108,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type F1(F1SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type F2(F2SEXP);
     Rcpp::traits::input_parameter< int >::type n_t(n_tSEXP);
-    Rcpp::traits::input_parameter< int >::type I(ISEXP);
+    Rcpp::traits::input_parameter< int >::type n_I(n_ISEXP);
     Rcpp::traits::input_parameter< int >::type m(mSEXP);
     Rcpp::traits::input_parameter< int >::type type(typeSEXP);
     Rcpp::traits::input_parameter< int >::type P(PSEXP);
@@ -117,7 +117,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type sample_size(sample_sizeSEXP);
     Rcpp::traits::input_parameter< int >::type chains(chainsSEXP);
     Rcpp::traits::input_parameter< bool >::type uncertainty(uncertaintySEXP);
-    rcpp_result_gen = Rcpp::wrap(ffbs_DIC(yt, F1, F2, n_t, I, m, type, P, delta, DIC, sample_size, chains, uncertainty));
+    rcpp_result_gen = Rcpp::wrap(ffbs_DIC(yt, F1, F2, n_t, n_I, m, type, P, delta, DIC, sample_size, chains, uncertainty));
     return rcpp_result_gen;
 END_RCPP
 }
