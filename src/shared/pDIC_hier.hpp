@@ -13,7 +13,7 @@
 #include <Rcpp.h>
 #include <omp.h>
 #include <RcppDist.h>
-
+#include "arma_norm.hpp"
 
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
@@ -63,8 +63,11 @@ double compute_pDIC(Rcpp::List temp_filter, arma::mat yt, arma::mat F1,
                     arma::mat sample_at = rmvnorm(1, F2*arma::trans(sample_akt), Rt.slice(j));
                     arma::mat sample_ft = F1t.slice(j)*arma::trans(sample_at);
                     //arma::mat sample_ft = F1t.slice(j)*at.col(j);
-                    arma::vec tmp_ll_sim = dmvnorm(arma::trans(yt.col(j)),
-                                                   sample_ft, Qt.slice(j), true);
+
+                    //arma::vec tmp_ll_sim = dmvnorm(arma::trans(yt.col(j)),
+                    //                               sample_ft, Qt.slice(j), true);
+                    arma::vec tmp_ll_sim = dmvnrm_arma_fast(arma::trans(sample_ft), arma::trans(yt.col(j))
+                                                            , Qt.slice(j), true);
                     ll_sim(k, chain) = arma::sum(tmp_ll_sim);
             }
         }
