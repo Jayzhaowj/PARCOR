@@ -100,7 +100,7 @@ hparcor <- function(yt, delta, P,
     resid_fwd[, , j+1] <- t(best_fwd$residuals)
     resid_bwd[, , j+1] <- t(best_bwd$residuals)
 
-    cat('\n The stage ', j, "of computation has been completed!")
+    cat('\n The stage', j, "of computation has been completed!")
 
 
   }

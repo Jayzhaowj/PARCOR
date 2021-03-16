@@ -16,6 +16,45 @@ using namespace Rcpp;
 //   http://gallery.rcpp.org/
 //
 
+// [[Rcpp::depends(RcppArmadillo)]]
+static double const log2pi = std::log(2.0 * M_PI);
+void inplace_tri_mat_mult(arma::rowvec &x, arma::mat const &trimat){
+  arma::uword const n = trimat.n_cols;
+
+  for(unsigned j = n; j-- > 0;){
+    double tmp(0.);
+    for(unsigned i = 0; i <= j; ++i)
+      tmp += trimat.at(i, j) * x[i];
+    x[j] = tmp;
+  }
+}
+
+// [[Rcpp::depends(RcppArmadillo)]]
+arma::vec dmvnrm_arma_fast(arma::mat const &x,
+                           arma::rowvec const &mean,
+                           arma::mat const &sigma,
+                           bool const logd = false) {
+  using arma::uword;
+  uword const n = x.n_rows,
+    xdim = x.n_cols;
+  arma::vec out(n);
+  arma::mat const rooti = arma::inv(trimatu(arma::chol(sigma)));
+  double const rootisum = arma::sum(log(rooti.diag())),
+    constants = -(double)xdim/2.0 * log2pi,
+    other_terms = rootisum + constants;
+
+  arma::rowvec z;
+  for (uword i = 0; i < n; i++) {
+    z = (x.row(i) - mean);
+    inplace_tri_mat_mult(z, rooti);
+    out(i) = other_terms - 0.5 * arma::dot(z, z);
+  }
+
+  if (logd)
+    return out;
+  return exp(out);
+}
+
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat F2,
@@ -151,12 +190,15 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     Ct.slice(i) = 0.5*Ct.slice(i) + 0.5*arma::trans(Ct.slice(i));
 
     if((i >= P) & (i < n_t - P)){
-      arma::vec tmp_ll = dmvnorm(arma::trans(yt.col(i)), ft.col(i), Qt.slice(i), true);
+      //arma::vec tmp_ll = dmvnorm(arma::trans(yt.col(i)), ft.col(i), Qt.slice(i), true);
+      //arma::vec tmp_ll = dmvt(arma::trans(yt.col(i)), ft.col(i), Qt.slice(i), nt(i-1), true);
+      arma::vec tmp_ll = dmvnrm_arma_fast(arma::trans(yt.col(i)),
+                                          arma::trans(ft.col(i)), Qt.slice(i), true);
       if(!tmp_ll.is_finite()){
-        Rcpp::Rcout << "Is Qt positive definite: " << (Qt.slice(i)).is_sympd() << "\n";
+        //Rcpp::Rcout << "Is Qt positive definite: " << (Qt.slice(i)).is_sympd() << "\n";
         Rcpp::Rcout << "ll: " << tmp_ll << "\n";
-        Rcpp::Rcout << "ft: " << ft.col(i) << "\n";
-        Rcpp::Rcout << "yt: " << yt.col(i) << "\n";
+        //Rcpp::Rcout << "ft: " << ft.col(i) << "\n";
+        //Rcpp::Rcout << "yt: " << yt.col(i) << "\n";
         Rcpp::Rcout << "iteration: " << i << "\n";
       }
       ll += arma::sum(tmp_ll);
