@@ -152,6 +152,13 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
 
     if((i >= P) & (i < n_t - P)){
       arma::vec tmp_ll = dmvnorm(arma::trans(yt.col(i)), ft.col(i), Qt.slice(i), true);
+      if(!tmp_ll.is_finite()){
+        Rcpp::Rcout << "Is Qt positive definite: " << (Qt.slice(i)).is_sympd() << "\n";
+        Rcpp::Rcout << "ll: " << tmp_ll << "\n";
+        Rcpp::Rcout << "ft: " << ft.col(i) << "\n";
+        Rcpp::Rcout << "yt: " << yt.col(i) << "\n";
+        Rcpp::Rcout << "iteration: " << i << "\n";
+      }
       ll += arma::sum(tmp_ll);
     }
 
