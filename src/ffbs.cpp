@@ -93,13 +93,11 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     if(i == lbound){
       akt.col(i) = mk_0;
       Rkt.slice(i) = S_0*Ck_0/delta1;
-      Rkt.slice(i) = 0.5*Rkt.slice(i) + 0.5*arma::trans(Rkt.slice(i));
     }else{
       akt.col(i) = mkt.col(i-1);
       Rkt.slice(i) = Ckt.slice(i-1)/delta1;
-      Rkt.slice(i) = 0.5*Rkt.slice(i) + 0.5*arma::trans(Rkt.slice(i));
     }
-
+    Rkt.slice(i) = 0.5*Rkt.slice(i) + 0.5*arma::trans(Rkt.slice(i));
     at.col(i) = F2*akt.col(i);
     Rt.slice(i) = F2*Rkt.slice(i)*arma::trans(F2)/delta2;
     Rt.slice(i) = 0.5*Rt.slice(i) + 0.5*arma::trans(Rt.slice(i));
@@ -114,7 +112,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     ft.col(i) = F1t.slice(i) * at.col(i);
     et.col(i) = yt.col(i) - ft.col(i);
     if(i == lbound){
-      Qt.slice(i) = F1t.slice(i) * Rt.slice(i) * arma::trans(F1t.slice(i)) + I_n;
+      Qt.slice(i) = F1t.slice(i) * Rt.slice(i) * arma::trans(F1t.slice(i)) + S_0*I_n;
       Qt.slice(i) = 0.5 * Qt.slice(i) + 0.5 * arma::trans(Qt.slice(i));
     }else{
       Qt.slice(i) = F1t.slice(i) * Rt.slice(i) * arma::trans(F1t.slice(i)) + St(i-1)*I_n;
@@ -137,7 +135,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     }
     mkt.col(i) = akt.col(i) + Ukt.slice(i) * inv_Qt.slice(i)*et.col(i);
     if(i == lbound){
-      Ckt.slice(i) = St(i)*(Rkt.slice(i) - Ukt.slice(i)*inv_Qt.slice(i)*arma::trans(Ukt.slice(i)));
+      Ckt.slice(i) = (St(i)/S_0)*(Rkt.slice(i) - Ukt.slice(i)*inv_Qt.slice(i)*arma::trans(Ukt.slice(i)));
     }else{
       Ckt.slice(i) = (St(i)/St(i-1))*(Rkt.slice(i) - Ukt.slice(i)*inv_Qt.slice(i)*arma::trans(Ukt.slice(i)));
     }
@@ -147,7 +145,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     Ut.slice(i) = Rt.slice(i) * arma::trans(F1t.slice(i));
     mt.col(i) = at.col(i) + Ut.slice(i) * inv_Qt.slice(i) * et.col(i);
     if(i == lbound){
-      Ct.slice(i) = St(i)*(Rt.slice(i) - Ut.slice(i) * inv_Qt.slice(i) * arma::trans(Ut.slice(i)));
+      Ct.slice(i) = (St(i)/S_0)*(Rt.slice(i) - Ut.slice(i) * inv_Qt.slice(i) * arma::trans(Ut.slice(i)));
     }else{
       Ct.slice(i) = (St(i)/St(i-1))*(Rt.slice(i) - Ut.slice(i) * inv_Qt.slice(i) * arma::trans(Ut.slice(i)));
     }
@@ -257,7 +255,7 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
       mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Cnt.slice(i), nt(ubound-1));
     }catch(...){
       //mnt_sample.slice(i) = rmvt(sample_size, mnt.col(i), Ct.slice(i), nt(ubound-1));
-      Rprintf("\n The sampler failed at iteration  ", i);
+      Rprintf("\n The sampler failed at iteration %i", i);
 
     }
 
