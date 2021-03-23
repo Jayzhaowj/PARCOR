@@ -21,6 +21,7 @@ using namespace Rcpp;
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat F2,
+                                          double n_0, double S_0,
                                           int n_t, int n_I, int m, int type, int P,
                                           double delta1, double delta2, int sample_size){
   // some constants
@@ -30,8 +31,8 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
   arma::colvec mk_0(n_I, arma::fill::zeros);
   arma::mat Ck_0(n_I, n_I, arma::fill::eye);
   //arma::mat Ck_s_0(n_I, n_I, arma::fill::eye);
-  double n_0 = 1;
-  double S_0 = 1;
+  // double n_0 = 1;
+  // double S_0 = 1;
   double ll = 0.0;
   arma::vec nt(n_t, arma::fill::zeros);
   arma::vec dt(n_t, arma::fill::zeros);
@@ -271,6 +272,7 @@ Rcpp::List sample_parcor_hier(Rcpp::List result, int m, int P, int type,
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
+                    double n_0, double S_0,
                     int n_t, int n_I, int m, int type, int P,
                     arma::mat delta, bool DIC, int sample_size,
                     int chains, bool uncertainty){
@@ -278,7 +280,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
   int delta_n = delta.n_rows;
   double ll_DIC = 0.0;
   double pDIC = 0.0;
-  Rcpp::List result_opt = forward_filter_backward_smooth(yt, F1, F2,
+  Rcpp::List result_opt = forward_filter_backward_smooth(yt, F1, F2, n_0, S_0,
                                                          n_t, n_I, m,  type, P,
                                                          delta(0, 0), delta(0, 1),
                                                          sample_size);
@@ -286,7 +288,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
   arma::rowvec delta_min = delta.row(0);
 
   for(int i = 1; i < delta_n; i++){
-    Rcpp::List result_new = forward_filter_backward_smooth(yt, F1, F2,
+    Rcpp::List result_new = forward_filter_backward_smooth(yt, F1, F2, n_0, S_0,
                                                            n_t, n_I, m,  type, P,
                                                            delta(i, 0), delta(i, 1),
                                                            sample_size);

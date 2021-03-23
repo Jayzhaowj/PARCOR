@@ -2,7 +2,7 @@
 ###### run dynamic hierarchical PARCOR model
 #############################################
 
-hparcor <- function(yt, delta, P,
+hparcor <- function(yt, delta, P, n_0, S_0,
                     sample_size = 1000L,
                     chains = 1, DIC = TRUE, uncertainty = TRUE){
   ### number of time point
@@ -24,6 +24,15 @@ hparcor <- function(yt, delta, P,
     delta <- default_delta
   }
 
+  default_S0 <- 1
+  if(missing(S_0)){
+    S_0 <- default_S0
+  }
+
+  default_n0 <- 1
+  if(missing(n_0)){
+    n_0 <- default_n0
+  }
   ### storage of variables
   resid_fwd <- array(0, dim = c(n_t, n_I, P+1))
   resid_bwd <- array(0, dim = c(n_t, n_I, P+1))
@@ -59,14 +68,14 @@ hparcor <- function(yt, delta, P,
   for(j in 1:P){
     ## forward
     best_fwd <- ffbs_DIC(yt = t(resid_fwd[, , j]),
-                         F1 = t(resid_bwd[, , j]), F2 = F2,
+                         F1 = t(resid_bwd[, , j]), F2 = F2, n_0=n_0, S_0=S_0,
                          n_t = n_t, n_I = n_I, m = j, type = 1, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
                          chains = chains, uncertainty=uncertainty)
 
     ## backward
     best_bwd <- ffbs_DIC(yt = t(resid_bwd[, , j]),
-                         F1 = t(resid_fwd[, , j]), F2 = F2,
+                         F1 = t(resid_fwd[, , j]), F2 = F2, n_0=n_0, S_0=S_0,
                          n_t = n_t, n_I = n_I, m = j, type = 0, P = P,
                          delta = delta, DIC = DIC, sample_size = sample_size,
                          chains = chains, uncertainty=uncertainty)
