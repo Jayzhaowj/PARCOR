@@ -91,7 +91,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     F1t.slice(i) = arma::diagmat(F1.col(i - sign*m));
     if(i == lbound){
       akt.col(i) = mk_0;
-      Rkt.slice(i) = 10*Ck_0/delta1;
+      Rkt.slice(i) = S_0*Ck_0/delta1;
       Rkt.slice(i) = 0.5*Rkt.slice(i) + 0.5*arma::trans(Rkt.slice(i));
     }else{
       akt.col(i) = mkt.col(i-1);
