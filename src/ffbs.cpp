@@ -217,6 +217,7 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
                             Rcpp::Named("residuals") = resid,
                             Rcpp::Named("nt") = nt,
                             Rcpp::Named("sigma2t") = St,
+                          //Rcpp::Named("V2t") = V2t,
                             Rcpp::Named("Qt") = Qt,
                             Rcpp::Named("nt") = nt,
                             Rcpp::Named("ll") = ll);
@@ -312,6 +313,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
                               Rcpp::Named("mnkt_sample") = sample["mnkt_sample"],
                               Rcpp::Named("residuals") = result_opt["residuals"],
                               Rcpp::Named("sigma2t") = result_opt["sigma2t"],
+                              //Rcpp::Named("V2t") = result_opt["V2t"],
                               Rcpp::Named("delta") = delta_min,
                               Rcpp::Named("ll") = ll_DIC,
                               Rcpp::Named("pDIC") = pDIC);
@@ -322,6 +324,7 @@ Rcpp::List ffbs_DIC(arma::mat yt, arma::mat F1, arma::mat F2,
                               //Rcpp::Named("Cnkt") = result_opt["Cnkt"],
                               Rcpp::Named("residuals") = result_opt["residuals"],
                               Rcpp::Named("sigma2t") = result_opt["sigma2t"],
+                              //Rcpp::Named("V2t") = result_opt["V2t"],
                               Rcpp::Named("delta") = delta_min,
                               Rcpp::Named("ll") = ll_DIC,
                               Rcpp::Named("pDIC") = pDIC);

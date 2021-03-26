@@ -61,6 +61,9 @@ hparcor <- function(yt, delta, P, n_0, S_0,
   mu_fwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
   mu_bwd_sample <- array(NA, dim = c(sample_size, n_I, n_t, P))
 
+
+  #V2t_fwd <- rep(list(NA), P)
+  #V2t_bwd <- rep(list(NA), P)
   ### initialization
   resid_fwd[, , 1] <- yt
   resid_bwd[, , 1] <- yt
@@ -105,6 +108,8 @@ hparcor <- function(yt, delta, P, n_0, S_0,
     DIC_fwd <- 2*(cumsum(pDIC_fwd) - best_pred_dens_fwd)
     DIC_bwd <- 2*(cumsum(pDIC_bwd) - best_pred_dens_bwd)
 
+    #V2t_fwd[[j]] <- best_fwd$V2t
+    #V2t_bwd[[j]] <- best_bwd$V2t
     ### obtain (j+1) residuals
     resid_fwd[, , j+1] <- t(best_fwd$residuals)
     resid_bwd[, , j+1] <- t(best_bwd$residuals)
@@ -117,6 +122,7 @@ hparcor <- function(yt, delta, P, n_0, S_0,
               phi_fwd = phi_fwd, phi_bwd = phi_bwd,
               mu_fwd = mu_fwd, mu_bwd = mu_bwd,
               sigma2t_fwd = sigma2t_fwd, sigma2t_bwd = sigma2t_bwd,
+              #V2t_fwd = V2t_fwd, V2t_bwd = V2t_bwd,
               best_delta_fwd = best_delta_fwd,
               best_delta_bwd = best_delta_bwd,
               best_pred_dens_fwd = best_pred_dens_fwd,
