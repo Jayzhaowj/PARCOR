@@ -248,7 +248,7 @@ draw_density_hier <- function(w, index, P, n_t, s, ...){
   jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                    "yellow", "#FF7F00", "red", "#7F0000"))
   filled.contour(x_coord, y_coord, s[(P+1):(n_t-P), ], xlab = 'time',
-                 ylab = 'frequency', main = bquote("log sc: "*"f"[.(index)]),
+                 ylab = 'frequency',
                  color.palette = jet.colors, ...)
   cat('Graph has been drawn!\n')
 }
