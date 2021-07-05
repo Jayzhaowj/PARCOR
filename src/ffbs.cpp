@@ -125,14 +125,13 @@ Rcpp::List forward_filter_backward_smooth(arma::mat yt, arma::mat F1, arma::mat 
     inv_Qt.slice(i) = arma::inv_sympd(Qt.slice(i));
 
     if(i == lbound){
-      nt(i) = n_0;
-      St(i) = S_0;
-      dt(i) = n_0*S_0;
+      nt(i) = n_0 + n_I;
+      dt(i) = n_0*S_0 + S_0*arma::as_scalar(arma::trans(et.col(i)) * inv_Qt.slice(i) * et.col(i));
     }else{
       nt(i) = nt(i-1) + n_I;
       dt(i) = dt(i-1) + St(i-1)*arma::as_scalar(arma::trans(et.col(i)) * inv_Qt.slice(i) * et.col(i));
-      St(i) = dt(i)/nt(i);
     }
+    St(i) = dt(i)/nt(i);
     mkt.col(i) = akt.col(i) + Ukt.slice(i) * inv_Qt.slice(i)*et.col(i);
     if(i == lbound){
       Ckt.slice(i) = (St(i)/S_0)*(Rkt.slice(i) - Ukt.slice(i)*inv_Qt.slice(i)*arma::trans(Ukt.slice(i)));

@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // cp_sd
 Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w);
 RcppExport SEXP _PARCOR_cp_sd(SEXP phiSEXP, SEXP SIGMASEXP, SEXP wSEXP) {
