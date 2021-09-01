@@ -12,11 +12,11 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 
-Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
+Rcpp::List compute_spec(arma::cube phi, arma::cube SIGMA,
                         arma::vec w, int P_max, int ch1,
                         int ch2, bool time_depend = true){
   // phi is ar coefficient in array type;
-  // SIGMA is innovation variance in matrix type;
+  // SIGMA is innovation variance in cube type;
   // w is the frequency band in vector type;
   // P_max is the potential model order;
   // ch1 and ch2 is the index number of time series;
@@ -33,7 +33,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
   arma::mat temp_phi;
   arma::cx_mat PHI_inv(n_I, n_I);
   arma::cx_mat PHI_conj_inv(n_I, n_I);
-  arma::mat SIGMA_inv = arma::inv(SIGMA);
+  //arma::mat SIGMA_inv = arma::inv(SIGMA);
   // f_spec and g_spec are spectral density and precision matrix.
   // f_dens and g_dens is the modulus of f_spec and g_spec;
   arma::cx_mat f_spec(n_I, n_I);
@@ -78,7 +78,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
         DTF_dens = abs(DTF); // directed transfer function
 
 
-        f_spec = PHI_inv * SIGMA * PHI_conj_inv;
+        f_spec = PHI_inv * SIGMA.slice(i) * PHI_conj_inv;
         g_spec = inv(f_spec);
         f_dens = abs(f_spec);
         g_dens = abs(g_spec);
@@ -134,7 +134,7 @@ Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA,
       arma::cx_mat DTF = PHI_inv.each_col() / PHI_inv_norm;
       DTF_dens = abs(DTF); // directed transfer function
 
-      f_spec = PHI_inv * SIGMA * PHI_conj_inv;
+      f_spec = PHI_inv * SIGMA.slice(n_t-P_max-1) * PHI_conj_inv;
       g_spec = inv(f_spec);
       f_dens = abs(f_spec);
       g_dens = abs(g_spec);

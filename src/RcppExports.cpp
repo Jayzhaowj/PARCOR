@@ -66,13 +66,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // compute_spec
-Rcpp::List compute_spec(arma::cube phi, arma::mat SIGMA, arma::vec w, int P_max, int ch1, int ch2, bool time_depend);
+Rcpp::List compute_spec(arma::cube phi, arma::cube SIGMA, arma::vec w, int P_max, int ch1, int ch2, bool time_depend);
 RcppExport SEXP _PARCOR_compute_spec(SEXP phiSEXP, SEXP SIGMASEXP, SEXP wSEXP, SEXP P_maxSEXP, SEXP ch1SEXP, SEXP ch2SEXP, SEXP time_dependSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::cube >::type phi(phiSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type SIGMA(SIGMASEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type SIGMA(SIGMASEXP);
     Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
     Rcpp::traits::input_parameter< int >::type P_max(P_maxSEXP);
     Rcpp::traits::input_parameter< int >::type ch1(ch1SEXP);
