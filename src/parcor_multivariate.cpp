@@ -4,7 +4,6 @@
 // gen_AR_sample is function of generating sample of AR coefficients.
 // PARCOR_to_AR_fun is function of transforming from PARCOR to AR.
 
-
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
 #include <RcppDist.h>
@@ -12,6 +11,7 @@
 #include "shared/pDIC_multivariate.hpp"
 
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::export]]
 
 Rcpp::List filter(arma::mat F1_fwd,
