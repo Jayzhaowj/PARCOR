@@ -11,6 +11,7 @@
 
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
+#include "gen_F1t.hpp"
 #include <omp.h>
 #include <RcppDist.h>
 
@@ -18,18 +19,19 @@
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::export]]
 
-Rcpp::List compute_DIC(Rcpp::List temp_filter, int sample_size, int i, int P, int chains=1){
+Rcpp::List compute_DIC(Rcpp::List temp_filter, arma::mat F1,
+                       int sample_size, int i, int P, int chains=1){
     double ll = 0.0;
     double effective_size_mean = 0.0;
     // retrieve the values
     arma::mat at = temp_filter["at"];
     arma::mat mt = temp_filter["mt"];
     Rcpp::List Ct = temp_filter["Ct"];
-    arma::cube F1t = temp_filter["F1t"];
     arma::mat ft = temp_filter["ft"];
     arma::mat yt = temp_filter["yt"];
     arma::cube Qt = temp_filter["Qt"];
-
+    int sign = 1;
+    arma::mat F1t;
     //arma::mat Qt_tilde;
     double ll_mean = 0.0;
     int n_t = at.n_cols;
@@ -39,7 +41,8 @@ Rcpp::List compute_DIC(Rcpp::List temp_filter, int sample_size, int i, int P, in
         ll += arma::sum(tmp_ll);
         arma::mat Ct_tmp = Rcpp::as<arma::mat>(Ct(j));
         arma::mat sample_at = rmvnorm(sample_size, at.col(j), Ct_tmp);
-        arma::mat sample_ft = F1t.slice(j) * arma::trans(sample_at);
+        F1t = arma::trans(gen_Ft(F1.col(j - sign * i)));
+        arma::mat sample_ft = F1t * arma::trans(sample_at);
         arma::mat ll_sim(sample_size/chains, chains, arma::fill::zeros);
        #pragma omp parallel for num_threads(chains)
             for (int chain = 0; chain < chains; ++chain) {

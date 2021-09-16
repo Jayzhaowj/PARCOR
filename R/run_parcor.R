@@ -26,7 +26,7 @@ run_parcor <- function(F1, delta, P, sample_size = 200L, chains = 1, DIC = TRUE,
   #browser()
   for(i in 1:P){
     tmp_fwd <- filter_smooth(F1_fwd, F1_bwd, S_0, i, as.matrix(delta[, , i]),
-                             1, P, 1, sample_size, chains, uncertainty)
+                             1, P, DIC, sample_size, chains, uncertainty)
     tmp_bwd <- filter_smooth(F1_fwd, F1_bwd, S_0, i, as.matrix(delta[, , i]),
                              0, P, 0, sample_size, chains, uncertainty)
     delta_fwd[i, ] <- tmp_fwd$delta_min

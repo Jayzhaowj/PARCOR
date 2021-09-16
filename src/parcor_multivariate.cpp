@@ -1,4 +1,3 @@
-#define ARMA_64BIT_WORD 1
 // PARCOR
 // run_parcor is main function of performing PARCOR model
 // misc about transformation from PARCOR to AR.
@@ -10,7 +9,7 @@
 #include <RcppDist.h>
 #include "shared/gen_F1t.hpp"
 #include "shared/pDIC_multivariate.hpp"
-
+using namespace Rcpp;
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 // [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::export]]
@@ -34,7 +33,7 @@ Rcpp::List filter(arma::mat F1_fwd,
   arma::dmat at(n_I2, n_t, arma::fill::zeros);
   arma::dmat mt(n_I2, n_t, arma::fill::zeros);
   arma::dmat Rt(n_I2, n_I2, arma::fill::zeros);
-  arma::cube F1t(n_I, n_I2, n_t, arma::fill::zeros);
+  arma::mat F1t;
   Rcpp::List Ct(n_t);
   arma::dcube Qt(n_I, n_I, n_t);
   arma::mat St_sqp(n_I, n_I, arma::fill::zeros);
@@ -64,24 +63,24 @@ Rcpp::List filter(arma::mat F1_fwd,
   arma::dmat F1_new(n_I, n_t, arma::fill::zeros);
   arma::dmat delta_m = arma::diagmat(arma::pow(delta, -0.5));
   for(int i = lbound; i < ubound; i++){
-    F1t.slice(i) = arma::trans(gen_Ft(F1.col(i - sign * m)));
+    F1t = arma::trans(gen_Ft(F1.col(i - sign * m)));
     if(i == 0){
       at.col(i) = mk_0;
       Rt = delta_m *  Ck_0 * delta_m;
-      Qt.slice(i) = F1t.slice(i) * Rt * arma::trans(F1t.slice(i)) + S_0;
+      Qt.slice(i) = F1t * Rt * arma::trans(F1t) + S_0;
       St_sqp = arma::sqrtmat_sympd(S_0);
     }else{
       at.col(i) = mt.col(i-1);
       Rt = delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m;
-      Qt.slice(i) = F1t.slice(i) * Rt * arma::trans(F1t.slice(i)) + St.slice(i-1);
+      Qt.slice(i) = F1t * Rt * arma::trans(F1t) + St.slice(i-1);
       St_sqp = arma::sqrtmat_sympd(St.slice(i-1));
     }
     Rt = 0.5*Rt + 0.5*arma::trans(Rt);
     Qt.slice(i) = 0.5*Qt.slice(i) + 0.5*arma::trans(Qt.slice(i));
-    ft.col(i) = F1t.slice(i) * at.col(i);
+    ft.col(i) = F1t * at.col(i);
     arma::dmat Qt_inv = arma::inv_sympd(Qt.slice(i));
     arma::dmat Qt_inv_sq = arma::sqrtmat_sympd(Qt_inv);
-    At = Rt * arma::trans(F1t.slice(i)) * Qt_inv;
+    At = Rt * arma::trans(F1t) * Qt_inv;
     arma::colvec et = yt.col(i) - ft.col(i);
     S_comp += St_sqp * Qt_inv_sq * et * arma::trans(et) * Qt_inv_sq * St_sqp;
     St.slice(i) = (n_0*S_0 + S_comp)/(n_0 + i + 1);
@@ -99,7 +98,6 @@ Rcpp::List filter(arma::mat F1_fwd,
                               Rcpp::Named("Ct") = Ct,
                               Rcpp::Named("St") = St,
                               Rcpp::Named("Qt") = Qt,
-                              Rcpp::Named("F1t") = F1t,
                               Rcpp::Named("yt") = yt,
                               Rcpp::Named("ft") = ft);
 }
@@ -137,13 +135,14 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     arma::rowvec ll(delta_n);
     double ll_DIC = 0.0;
     double es_DIC = 0.0;
-
+    int sign = 1;
     if(type_num == 1){
       F1 = F1_bwd;
       yt = F1_fwd;
     }else{
       F1 = F1_fwd;
       yt = F1_bwd;
+      sign = -1;
     }
     // do the filtering updating function
     Rcpp::List filter_opt = filter(F1_fwd, F1_bwd, S_0, m, delta.row(0), type_num, P, n_t, n_I, n_I2);
@@ -167,13 +166,15 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     Rcpp::List Ct = filter_opt["Ct"];
     arma::mat Rt(n_I2, n_I2, arma::fill::zeros);
     arma::cube St = filter_opt["St"];
-    arma::cube F1t = filter_opt["F1t"];
+    arma::mat F1t;
+
     if(type_num == 1){
         lbound = P;
         ubound = n_t;
     }else{
         lbound = 0;
         ubound = n_t - P;
+
     }
     // This following part is smoothing.
     // initializing.
@@ -189,13 +190,15 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
         Cnt(i) = Rcpp::as<arma::mat>(Ct(i)) - Bt * (Rt - Rcpp::as<arma::mat>(Cnt(i+1)))*arma::trans(Bt);
         Cnt(i) = 0.5*Rcpp::as<arma::mat>(Cnt(i)) + 0.5*arma::trans(Rcpp::as<arma::mat>(Cnt(i)));
     }
+
     for(int i = lbound; i < ubound; i++){
-        F1_new.col(i) = yt.col(i) - F1t.slice(i) * mnt.col(i); //update the next stage prediction error.
+        F1t = arma::trans(gen_Ft(F1.col(i - sign * m)));
+        F1_new.col(i) = yt.col(i) - F1t * mnt.col(i); //update the next stage prediction error.
     }
 
 
     if(DIC){
-        Rcpp::List tmp_DIC = compute_DIC(filter_opt, sample_size, m-1, P, chains);
+        Rcpp::List tmp_DIC = compute_DIC(filter_opt, F1, sample_size, m, P, chains);
         ll_DIC = tmp_DIC["ll"];
         es_DIC = tmp_DIC["ES_mean"];
     }
