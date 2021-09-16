@@ -1,3 +1,4 @@
+#define ARMA_64BIT_WORD 1
 // PARCOR
 // run_parcor is main function of performing PARCOR model
 // misc about transformation from PARCOR to AR.
@@ -104,6 +105,7 @@ Rcpp::List filter(arma::mat F1_fwd,
 }
 
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::export]]
 
 Rcpp::List filter_smooth(arma::mat F1_fwd,
