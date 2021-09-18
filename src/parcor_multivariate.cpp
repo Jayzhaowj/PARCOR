@@ -79,6 +79,7 @@ Rcpp::List filter(arma::mat F1_fwd,
     Qt.slice(i) = 0.5*Qt.slice(i) + 0.5*arma::trans(Qt.slice(i));
     ft.col(i) = F1t * at.col(i);
     arma::dmat Qt_inv = arma::inv_sympd(Qt.slice(i));
+    Qt_inv = 0.5*Qt_inv + 0.5*arma::trans(Qt_inv);
     arma::dmat Qt_inv_sq = arma::sqrtmat_sympd(Qt_inv);
     At = Rt * arma::trans(F1t) * Qt_inv;
     arma::colvec et = yt.col(i) - ft.col(i);
