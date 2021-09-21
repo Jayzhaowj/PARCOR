@@ -8,6 +8,6 @@ Description: Provides routines for Kalman filtering and smoothing, and Bayesian 
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Depends: snowfall (>= 1.84-6.1)
-Imports: Rcpp (>= 1.0.1)
-LinkingTo: Rcpp, RcppArmadillo, RcppDist
+Depends: R (>= 3.3.0), snowfall (>= 1.84-6.1), mvnfast
+Imports: Rcpp (>= 1.0.1), BH, coda, methods, utils, zoo, snowfall, GIGrvg, mvnfast
+LinkingTo: Rcpp, RcppArmadillo, RcppDist, RcppProgress, BH, snowfall, GIGrvg, mvnfast

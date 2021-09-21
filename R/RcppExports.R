@@ -41,6 +41,10 @@ filter_smooth <- function(F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sampl
     .Call(`_PARCOR_filter_smooth`, F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sample_size, chains, uncertainty)
 }
 
+do_shrinkTVP <- function(y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip) {
+    .Call(`_PARCOR_do_shrinkTVP`, y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip)
+}
+
 run_whittle <- function(phi_fwd, phi_bwd, n_I) {
     .Call(`_PARCOR_run_whittle`, phi_fwd, phi_bwd, n_I)
 }
@@ -51,5 +55,9 @@ sample_tvar_coef <- function(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_m
 
 run_dl <- function(phi_fwd, phi_bwd) {
     .Call(`_PARCOR_run_dl`, phi_fwd, phi_bwd)
+}
+
+vi_shrinkTVP <- function(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip) {
+    .Call(`_PARCOR_vi_shrinkTVP`, y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip)
 }
 
