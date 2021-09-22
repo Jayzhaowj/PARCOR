@@ -40,7 +40,7 @@ sPARCOR <- function(y,
     }
     result_skip <- run_parcor_parallel(F1 = t(y), delta = delta, P = 1, S_0 = S_0*diag(K),
                                        sample_size = (niter-nburn)/nthin, DIC = FALSE, uncertainty = TRUE)
-    result <- shrinkTVP(y_fwd = t(result_skip$F1_fwd), y_bwd = t(result_skip$F1_bwd),
+    result <- mcmc_sPARCOR(y_fwd = t(result_skip$F1_fwd), y_bwd = t(result_skip$F1_bwd),
                         d = d, S_0 = S_0, niter = niter, nburn = nburn, nthin = nthin,
                         learn_a_xi = learn_a_xi, learn_a_tau = learn_a_tau, a_xi = a_xi,
                         a_tau = a_tau, learn_kappa2 = learn_kappa2, learn_lambda2 = learn_lambda2,
@@ -61,7 +61,7 @@ sPARCOR <- function(y,
       result$beta$b[[i]] <- aperm(result$beta$b[[i]], perm = c(2,1,3))
     }
   }else{
-    result <- shrinkTVP(y_fwd = y, y_bwd = y,
+    result <- mcmc_sPARCOR(y_fwd = y, y_bwd = y,
                         d = d, S_0 = S_0, niter = niter, nburn = nburn, nthin = nthin,
                         learn_a_xi = learn_a_xi, learn_a_tau = learn_a_tau, a_xi = a_xi,
                         a_tau = a_tau, learn_kappa2 = learn_kappa2, learn_lambda2 = learn_lambda2,
@@ -80,7 +80,6 @@ sPARCOR <- function(y,
   phi_bwd <- result$beta$b
   sfInit(parallel = TRUE, cpus = cpus, type = "SOCK")
   sfLibrary(PARCOR)
-  sfLibrary(mPARCORwNG)
   sfExport("phi_fwd", "phi_bwd", "K", "d")
   ar_coef_sample <- sfLapply(1:((niter-nburn)/nthin), function(i) obtain_TVAR(result$beta$f[[i]], result$beta$b[[i]], K, d))
   sfStop()

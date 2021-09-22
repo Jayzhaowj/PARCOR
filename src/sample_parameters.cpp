@@ -1,7 +1,8 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
-#include "do_rgig1.h"
 #include <math.h>
+#include <shrinkTVP.h>
+
 using namespace Rcpp;
 
 
@@ -193,7 +194,7 @@ void resample_alpha_diff(arma::vec& alpha_samp, arma::mat betaenter, arma::vec& 
     double p3_theta = arma::as_scalar(arma::accu(arma::pow(beta_diff.col(j), 2))) +
       std::pow((betaenter(0, j) - beta_mean(j)), 2);
 
-    double res = do_rgig1(p1_theta, p3_theta, p2_theta);
+    double res = shrinkTVP::do_rgig1(p1_theta, p3_theta, p2_theta);
     theta(j) = res;
     theta_sr_new(j) = std::sqrt(arma::as_scalar(theta(j))) * sign_sqrt(j);
   }
@@ -221,7 +222,7 @@ void sample_local_shrink(arma::vec& local_shrink, const arma::vec& param_vec, do
   for(int j = 0; j < d; j++){
 
     double p3 = param_vec2(j);
-    local_shrink(j) = do_rgig1(p1, p3, p2);
+    local_shrink(j) = shrinkTVP::do_rgig1(p1, p3, p2);
 
   }
   std::for_each(local_shrink.begin(), local_shrink.end(), res_protector);

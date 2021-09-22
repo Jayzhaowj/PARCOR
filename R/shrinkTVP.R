@@ -1,172 +1,26 @@
 
-#' Markov Chain Monte Carlo (MCMC) for time-varying parameter models with shrinkage
-#'
-#' \code{shrinkTVP} samples from the joint posterior distribution of the parameters of a time-varying
-#' parameter model with shrinkage, potentially including stochastic volatility (SV), and returns the MCMC draws.
-#'
-#' For details concerning the algorithm please refer to the paper by Bitto and Frühwirth-Schnatter (2019).
-#'
-#' @param formula object of class "formula": a symbolic representation of the model, as in the
-#' function \code{lm}. For details, see \code{\link{formula}}.
-#' @param data \emph{optional} data frame containing the response variable and the covariates. If not found in \code{data},
-#' the variables are taken from \code{environment(formula)}, typically the environment from which \code{shrinkTVP}
-#' is called. No \code{NA}s are allowed in the response variable and the covariates.
-#' @param niter positive integer, indicating the number of MCMC iterations
-#' to perform, including the burn-in. Has to be larger than or equal to \code{nburn} + 2. The default value is 10000.
-#' @param nburn non-negative integer, indicating the number of iterations discarded
-#' as burn-in. Has to be smaller than or equal to \code{niter} - 2. The default value is \code{round(niter / 2)}.
-#' @param nthin positive integer, indicating the degree of thinning to be performed. Every \code{nthin} draw is kept and returned.
-#' The default value is 1, implying that every draw is kept.
-#' @param learn_a_xi logical value indicating whether to learn a_xi, the local adaptation parameter of the state variances.
-#' The default value is \code{TRUE}.
-#' @param learn_a_tau logical value indicating whether to learn a_tau, the local adaptation parameter of the mean of the
-#' initial values of the states. The default value is \code{TRUE}.
-#' @param a_xi positive, real number, indicating the (fixed) value for a_xi. Ignored if
-#' \code{learn_a_xi} is \code{TRUE}. The default value is 0.1.
-#' @param a_tau positive, real number, indicating the (fixed) value for a_tau. Ignored if
-#' \code{learn_a_tau} is \code{TRUE}. The default value is 0.1.
-#' @param learn_kappa2 logical value indicating whether to learn kappa2, the global level of shrinkage for
-#' the state variances. The default value is \code{TRUE}.
-#' @param learn_lambda2 logical value indicating whether to learn the lambda^2 parameter,
-#' the global level of shrinkage for the mean of the initial values of the states. The default value is \code{TRUE}.
-#' @param kappa2 positive, real number, indicating the (fixed) value for kappa2. Ignored if
-#' \code{learn_kappa2} is \code{TRUE}. The default value is 20.
-#' @param lambda2 positive, real number, indicating the (fixed) value for lambda2. Ignored if
-#' \code{learn_lambda2} is \code{TRUE}. The default value is 20.
-#' @param hyperprior_param \emph{optional} named list containing hyperparameter values.
-#' Not all have to be supplied, with those missing being replaced by the default values.
-#' Any list elements that are misnamed will be ignored and a warning will be thrown.
-#' All hyperparameter values have to be positive, real numbers. The following hyperparameters can be
-#' supplied:
-#' \itemize{
-#' \item \code{c0}: The default value is 2.5.
-#' \item \code{g0}: The default value is 5.
-#' \item \code{G0}: The default value is 5 / (2.5 - 1).
-#' \item \code{e1}: The default value is 0.001.
-#' \item \code{e2}: The default value is 0.001.
-#' \item \code{d1}: The default value is 0.001.
-#' \item \code{d2}: The default value is 0.001.
-#' \item \code{b_xi}: The default value is 10.
-#' \item \code{b_tau}: The default value is 10.
-#' \item \code{nu_xi}: The default value is 5.
-#' \item \code{nu_tau}: The default value is 5.
-#' }
-#' @param c_tuning_par_xi positive, real number. Determines the standard deviation of the proposal
-#' distribution for the Metropolis Hastings step for a_xi. Ignored if \code{learn_a_xi} is \code{FALSE}. The default
-#' value is 1.
-#' @param c_tuning_par_tau positive, real number. Determines the standard deviation of the proposal
-#' distribution for the Metropolis Hastings step for a_tau. Ignored if \code{learn_a_tau} is \code{FALSE}. The default
-#' value is 1.
-#' @param display_progress logical value indicating whether the progress bar and other informative output should be
-#' displayed. The default value is \code{TRUE}.
-#' @param ret_beta_nc logical value indicating whether to output the non-centered states in addition to the centered ones.
-#' The default value is \code{FALSE}.
-#'
-#'
-#' @return The value returned is a list object of class \code{shrinkTVP} containing
-#' \item{\code{sigma2}}{\code{mcmc} object containing the parameter draws from the posterior distribution of \code{sigma2}.
-#' If \code{sv} is \code{TRUE}, \code{sigma2} is additionally an \code{mcmc.tvp} object.}
-#' \item{\code{theta_sr}}{an \code{mcmc} object containing the parameter draws from the posterior distribution of the square root of theta.}
-#' \item{\code{beta_mean}}{an \code{mcmc} object containing the parameter draws from the posterior distribution of beta_mean.}
-#' \item{\code{beta_nc}}{\emph{(optional)} \code{list} object containing an \code{mcmc.tvp} object for the parameter draws from the posterior
-#' distribution of the non-centered states, one for each covariate. In the case that there is only one covariate, this becomes just
-#' a single \code{mcmc.tvp} object. Not returned if \code{ret_beta_nc} is \code{FALSE}.}
-#' \item{\code{beta}}{\code{list} object containing an \code{mcmc.tvp} object for the parameter draws from the posterior distribution of the centered
-#' states, one for each covariate. In the case that there is only one covariate, this becomes just a single \code{mcmc.tvp} object.}
-#' \item{\code{xi2}}{\code{mcmc} object containing the parameter draws from the posterior distribution of xi2.}
-#' \item{\code{a_xi}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of a_xi.
-#' Not returned if \code{learn_a_xi} is \code{FALSE}.}
-#' \item{\code{a_xi_acceptance}}{\emph{(optional)} \code{list} object containing acceptance statistics for the Metropolis Hastings algorithm for
-#' a_xi. Not returned if \code{learn_a_xi} is \code{FALSE}.}
-#' \item{\code{tau2}}{\code{mcmc} object containing the parameter draws from the posterior distribution of tau2.}
-#' \item{\code{a_tau}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of a_tau.
-#' Not returned if \code{learn_a_tau} is \code{FALSE}.}
-#' \item{\code{a_tau_acceptance}}{\emph{(optional)} \code{list} containing acceptance statistics for the Metropolis Hastings algorithm for
-#' a_tau. Not returned if \code{learn_a_tau} is \code{FALSE}.}
-#' \item{\code{kappa2}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of kappa2.
-#' Not returned if \code{learn_kappa2} is \code{FALSE}.}
-#' \item{\code{lambda2}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of lambda2.
-#' Not returned if \code{learn_lambda2} is \code{FALSE}.}
-#' \item{\code{C0}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of C0.
-#' Not returned if \code{sv} is \code{TRUE}.}
-#' \item{\code{sv_mu}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of the mu
-#' parameter for the stochastic volatility model on the errors. Not returned if \code{sv} is \code{FALSE}.}
-#' \item{\code{sv_phi}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of the phi
-#' parameter for the stochastic volatility model on the errors. Not returned if \code{sv} is \code{FALSE}.}
-#' \item{\code{sv_sigma2}}{\emph{(optional)} \code{mcmc} object containing the parameter draws from the posterior distribution of the sigma2
-#' parameter for the stochastic volatility model on the errors. Not returned if \code{sv} is \code{FALSE}.}
-#' \item{\code{priorvals}}{\code{list} object containing hyperparameter values of the prior distributions, as specified by the user.}
-#' \item{\code{model}}{\code{list} object containing the model matrix and model response used.}
-#' \item{\code{summaries}}{\code{list} object containing a collection of summary statistics of the posterior draws.}
-#' \item{\code{LPDS_comp}}{\code{list} object containg two arrays that are required for calculating the LPDS.}
-#' To display the output, use \code{plot} and \code{summary}. The \code{summary} method displays the specified prior values stored in
-#' \code{priorvals} and the posterior summaries stored in \code{summaries}, while the \code{plot} method calls \code{coda}'s \code{plot.mcmc}
-#' or the \code{plot.mcmc.tvp} method. Furthermore, all functions that can be applied to \code{coda::mcmc} objects
-#' (e.g. \code{coda::acfplot}) can be applied to all output elements that are \code{coda} compatible.
-#' @author Peter Knaus \email{peter.knaus@@wu.ac.at}
-#' @seealso \code{\link{plot.shrinkTVP}}, \code{\link{plot.mcmc.tvp}}
-#' @references Bitto, A., & Frühwirth-Schnatter, S. (2019). "Achieving shrinkage in a time-varying parameter model framework."
-#' \emph{Journal of Econometrics}, 210(1), 75-97. <doi:10.1016/j.jeconom.2018.11.006>
-#' @examples
-#' \donttest{
-#'
-#' ## Example 1, learn everything
-#' set.seed(123)
-#' sim <- simTVP(theta = c(0.2, 0, 0), beta_mean = c(1.5, -0.3, 0))
-#' data <- sim$data
-#'
-#' res <- shrinkTVP(y ~ x1 + x2, data = data)
-#' # summarize output
-#' summary(res)
-#'
-#'
-#' ## Example 2, hierarchical Bayesian Lasso
-#' res <- shrinkTVP(y ~ x1 + x2, data = data,
-#'                 learn_a_xi = FALSE, learn_a_tau = FALSE,
-#'                 a_xi = 1, a_tau = 1)
-#'
-#'
-#' ## Example 3, non-hierarchical Bayesian Lasso
-#' res <- shrinkTVP(y ~ x1 + x2, data = data,
-#'                 learn_a_xi = FALSE, learn_a_tau = FALSE,
-#'                 a_xi = 1, a_tau = 1,
-#'                 learn_kappa2 = FALSE, learn_lambda2 = FALSE)
-#'
-#'
-#' ## Example 4, adding stochastic volatility
-#' res <- shrinkTVP(y ~ x1 + x2, data = data,
-#'                 sv = TRUE)
-#'
-#'
-#' ## Example 4, changing some of the default hyperparameters
-#' res <- shrinkTVP(y ~ x1 + x2, data = data,
-#'                 hyperprior_param = list(b_xi = 5,
-#'                                         nu_xi = 10))
-#' }
-#'
-#' @export
-shrinkTVP <- function(y_fwd,
-                      y_bwd,
-                      S_0,
-                      d,
-                      niter = 10000,
-                      nburn = round(niter / 2),
-                      nthin = 1,
-                      learn_a_xi = TRUE,
-                      learn_a_tau = TRUE,
-                      a_xi = 0.1,
-                      a_tau = 0.1,
-                      learn_kappa2 = TRUE,
-                      learn_lambda2 = TRUE,
-                      kappa2 = 20,
-                      lambda2 = 20,
-                      hyperprior_param,
-                      c_tuning_par_xi = 1,
-                      c_tuning_par_tau = 1,
-                      display_progress = TRUE,
-                      ret_beta_nc = FALSE,
-                      ind,
-                      skip){
+mcmc_sPARCOR <- function(y_fwd,
+                         y_bwd,
+                         S_0,
+                         d,
+                         niter = 10000,
+                         nburn = round(niter / 2),
+                         nthin = 1,
+                         learn_a_xi = TRUE,
+                         learn_a_tau = TRUE,
+                         a_xi = 0.1,
+                         a_tau = 0.1,
+                         learn_kappa2 = TRUE,
+                         learn_lambda2 = TRUE,
+                         kappa2 = 20,
+                         lambda2 = 20,
+                         hyperprior_param,
+                         c_tuning_par_xi = 1,
+                         c_tuning_par_tau = 1,
+                         display_progress = TRUE,
+                         ret_beta_nc = FALSE,
+                         ind,
+                         skip){
 
 
   # Input checking ----------------------------------------------------------
@@ -221,32 +75,7 @@ shrinkTVP <- function(y_fwd,
   }
 
 
-  # Same procedure for sv_param
-  # if (missing(sv_param) | sv == FALSE){
-  #   sv_param <- default_hyper_sv
-  # } else {
-  #
-  #   if (is.list(sv_param) == FALSE | is.data.frame(sv_param)){
-  #     stop("sv_param has to be a list")
-  #   }
-  #
-  #   stand_sv_nam <- names(default_hyper_sv)
-  #   user_sv_nam <- names(sv_param)
-  #
-  #   # Give out warning if an element of the parameter list is misnamed
-  #   if (any(!user_sv_nam %in% stand_sv_nam)){
-  #     wrong_nam <- user_sv_nam[!user_sv_nam %in% stand_sv_nam]
-  #     warning(paste0(paste(wrong_nam, collapse = ", "),
-  #                    ifelse(length(wrong_nam) == 1, " has", " have"),
-  #                    " been incorrectly named in sv_param and will be ignored"),
-  #             immediate. = TRUE)
-  #   }
-  #
-  #   # Merge users' and default values and ignore all misnamed values
-  #   missing_sv_param <- stand_sv_nam[!stand_sv_nam %in% user_sv_nam]
-  #   sv_param[missing_sv_param] <- default_hyper_sv[missing_sv_param]
-  #   sv_param <- sv_param[stand_sv_nam]
-  # }
+
 
   # Check if all numeric inputs are correct
   to_test_num <- list(lambda2 = lambda2,
@@ -260,40 +89,7 @@ shrinkTVP <- function(y_fwd,
     to_test_num <- c(to_test_num, hyperprior_param)
   }
 
-  # if (missing(sv_param) == FALSE){
-  #   to_test_num <- c(to_test_num, sv_param[names(sv_param) != "bmu"])
-  # }
-#
-#   bad_inp <- sapply(to_test_num, numeric_input_bad)
-#
-#
-#   if (any(bad_inp)){
-#     stand_names <- c(names(default_hyper), names(default_hyper_sv), "lambda2", "kappa2", "a_xi", "a_tau", "c_tuning_par_xi", "c_tuning_par_tau")
-#     bad_inp_names <- names(to_test_num)[bad_inp]
-#     bad_inp_names <- bad_inp_names[bad_inp_names %in% stand_names]
-#     stop(paste0(paste(bad_inp_names, collapse = ", "),
-#                 ifelse(length(bad_inp_names) == 1, " has", " have"),
-#                 " to be a single, positive number"))
-#   }
-#
-#   # Check bmu seperately
-#   # if (!is.numeric(sv_param$bmu) | !is.scalar(sv_param$bmu)){
-#   #   stop("bmu has to be a single number")
-#   # }
-#
-#   # Check if all integer inputs are correct
-#   to_test_int <- list(niter = niter,
-#                    nburn = nburn,
-#                    nthin = nthin)
-#   bad_int_inp <- sapply(to_test_int, int_input_bad)
-#
-#   if (any(bad_int_inp)){
-#     bad_inp_names <- names(to_test_int)[bad_int_inp]
-#     stop(paste0(paste(bad_inp_names, collapse = ", "),
-#                 ifelse(length(bad_inp_names) == 1, " has", " have"),
-#                 " to be a single, positive integer"))
-#
-#   }
+
 
   if ((niter - nburn) < 2){
     stop("niter has to be larger than or equal to nburn + 2")
@@ -307,24 +103,7 @@ shrinkTVP <- function(y_fwd,
     stop("nthin can not be larger than (niter - nburn)/2")
   }
 
-  # # Check if all boolean inputs are correct
-  # to_test_bool <- list(learn_lambda2 = learn_lambda2,
-  #                      learn_kappa2 = learn_kappa2,
-  #                      learn_a_xi = learn_a_xi,
-  #                      learn_a_tau = learn_a_tau,
-  #                      display_progress = display_progress,
-  #                      # sv = sv,
-  #                      ret_beta_nc = ret_beta_nc)
-  #
-  # bad_bool_inp <- sapply(to_test_bool, bool_input_bad)
-  #
-  # if (any(bad_bool_inp)){
-  #   bad_inp_names <- paste(names(to_test_bool)[bad_bool_inp], collapse = ", ")
-  #   stop(paste0(bad_inp_names,
-  #               ifelse(length(bad_inp_names) == 1, " has", " have"),
-  #               " to be a single logical value"))
-  #
-  # }
+
 
   # # Check if formula is a formula
   # if (inherits(formula, "formula") == FALSE){
@@ -372,7 +151,7 @@ shrinkTVP <- function(y_fwd,
 
   runtime <- system.time({
     suppressWarnings({
-      res <- do_shrinkTVP(y_fwd,
+      res <- do_mcmc_sPARCOR(y_fwd,
                           y_bwd,
                           S_0,
                           d,

@@ -1,6 +1,3 @@
-library(snowfall)
-
-
 run_parcor_parallel <- function(F1, delta, P, sample_size = 200L, chains = 1, DIC = TRUE, S_0,
                                 uncertainty = TRUE){
 

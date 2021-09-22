@@ -190,9 +190,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// do_shrinkTVP
-List do_shrinkTVP(arma::mat y_fwd, arma::mat y_bwd, double S_0, int d, int niter, int nburn, int nthin, double c0, double g0, double G0, double d1, double d2, double e1, double e2, bool learn_lambda2, bool learn_kappa2, double lambda2, double kappa2, bool learn_a_xi, bool learn_a_tau, double a_xi, double a_tau, double c_tuning_par_xi, double c_tuning_par_tau, double b_xi, double b_tau, double nu_xi, double nu_tau, bool display_progress, bool ret_beta_nc, bool store_burn, bool ind, bool skip);
-RcppExport SEXP _PARCOR_do_shrinkTVP(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP S_0SEXP, SEXP dSEXP, SEXP niterSEXP, SEXP nburnSEXP, SEXP nthinSEXP, SEXP c0SEXP, SEXP g0SEXP, SEXP G0SEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP learn_lambda2SEXP, SEXP learn_kappa2SEXP, SEXP lambda2SEXP, SEXP kappa2SEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP c_tuning_par_xiSEXP, SEXP c_tuning_par_tauSEXP, SEXP b_xiSEXP, SEXP b_tauSEXP, SEXP nu_xiSEXP, SEXP nu_tauSEXP, SEXP display_progressSEXP, SEXP ret_beta_ncSEXP, SEXP store_burnSEXP, SEXP indSEXP, SEXP skipSEXP) {
+// do_mcmc_sPARCOR
+List do_mcmc_sPARCOR(arma::mat y_fwd, arma::mat y_bwd, double S_0, int d, int niter, int nburn, int nthin, double c0, double g0, double G0, double d1, double d2, double e1, double e2, bool learn_lambda2, bool learn_kappa2, double lambda2, double kappa2, bool learn_a_xi, bool learn_a_tau, double a_xi, double a_tau, double c_tuning_par_xi, double c_tuning_par_tau, double b_xi, double b_tau, double nu_xi, double nu_tau, bool display_progress, bool ret_beta_nc, bool store_burn, bool ind, bool skip);
+RcppExport SEXP _PARCOR_do_mcmc_sPARCOR(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP S_0SEXP, SEXP dSEXP, SEXP niterSEXP, SEXP nburnSEXP, SEXP nthinSEXP, SEXP c0SEXP, SEXP g0SEXP, SEXP G0SEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP learn_lambda2SEXP, SEXP learn_kappa2SEXP, SEXP lambda2SEXP, SEXP kappa2SEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP c_tuning_par_xiSEXP, SEXP c_tuning_par_tauSEXP, SEXP b_xiSEXP, SEXP b_tauSEXP, SEXP nu_xiSEXP, SEXP nu_tauSEXP, SEXP display_progressSEXP, SEXP ret_beta_ncSEXP, SEXP store_burnSEXP, SEXP indSEXP, SEXP skipSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -229,7 +229,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type store_burn(store_burnSEXP);
     Rcpp::traits::input_parameter< bool >::type ind(indSEXP);
     Rcpp::traits::input_parameter< bool >::type skip(skipSEXP);
-    rcpp_result_gen = Rcpp::wrap(do_shrinkTVP(y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip));
+    rcpp_result_gen = Rcpp::wrap(do_mcmc_sPARCOR(y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -314,7 +314,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_filter_smooth_TVVAR", (DL_FUNC) &_PARCOR_filter_smooth_TVVAR, 9},
     {"_PARCOR_filter", (DL_FUNC) &_PARCOR_filter, 10},
     {"_PARCOR_filter_smooth", (DL_FUNC) &_PARCOR_filter_smooth, 11},
-    {"_PARCOR_do_shrinkTVP", (DL_FUNC) &_PARCOR_do_shrinkTVP, 33},
+    {"_PARCOR_do_mcmc_sPARCOR", (DL_FUNC) &_PARCOR_do_mcmc_sPARCOR, 33},
     {"_PARCOR_run_whittle", (DL_FUNC) &_PARCOR_run_whittle, 3},
     {"_PARCOR_sample_tvar_coef", (DL_FUNC) &_PARCOR_sample_tvar_coef, 8},
     {"_PARCOR_run_dl", (DL_FUNC) &_PARCOR_run_dl, 2},

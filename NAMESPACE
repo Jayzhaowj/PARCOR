@@ -1,4 +1,4 @@
 exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, evalCpp)
-importFrom(GIGrvg,rgig)
+importFrom(GIGrvg, rgig)
 useDynLib(PARCOR, .registration=TRUE)

@@ -6,11 +6,11 @@
 //#include "sample_beta_McCausland.h"
 #include "sample_parameters.h"
 #include "ffbs.h"
-#include "MH_step.h"
+#include <shrinkTVP.h>
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-List do_shrinkTVP(arma::mat y_fwd,
+List do_mcmc_sPARCOR(arma::mat y_fwd,
                   arma::mat y_bwd,
                   double S_0,
                   int d,
@@ -715,11 +715,40 @@ List do_shrinkTVP(arma::mat y_fwd,
     }
 
 
+    if (learn_a_xi){
+      for(int k = 0; k < n_I; k++){
+        double before = a_xif_samp(k);
+        try {
+          //double tmp = shrinkTVP::DG_MH_step(a_xif_samp(k), c_tuning_par_xi, kappa2f_samp(k), arma::vectorise(thetaf_sr_samp.col(k)), b_xi, nu_xi, d1, d2);
+          double tmp = 1.0;
+          a_xif_samp(k) = tmp;
+        } catch(...) {
+          a_xif_samp(k) = arma::datum::nan;
+          if (succesful == true){
+            fail = "sample forward a_xi";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+
+        if (before != a_xif_samp(k)){
+          accept_a_xif_tot(k) += 1;
+          if (j < nburn){
+            accept_a_xif_pre(k) += 1;
+          } else {
+            accept_a_xif_post(k) += 1;
+          }
+        }
+      }
+
+    }
+
     if (learn_a_tau){
       for(int k = 0; k < n_I; k++){
         double before = a_tauf_samp(k);
         try {
-          double tmp = MH_step(a_tauf_samp(k), c_tuning_par_tau, n_I*d, lambda2f_samp(k), arma::vectorise(betaf_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
+          //double tmp = shrinkTVP::DG_MH_step(a_tauf_samp(k), c_tuning_par_tau, n_I*d, lambda2f_samp(k), arma::vectorise(betaf_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
+          double tmp = 1.0;
           a_tauf_samp(k) = tmp;
         } catch(...){
           a_tauf_samp(k) = arma::datum::nan;
@@ -794,18 +823,16 @@ List do_shrinkTVP(arma::mat y_fwd,
     // step d)
     // sample a_xib and a_taub with MH
     if (learn_a_xi){
-      //arma::cout << "size of a_xif_samp" << arma::size(a_xif_samp) << arma::endl;
       for(int k = 0; k < n_I; k++){
         double before = a_xib_samp(k);
-        //arma::cout << "size of kappa2f_samp " << arma::size(kappa2f_samp) << arma::endl;
-        //arma::cout << "size of thetaf_sr_samp " << arma::size(thetab_sr_samp) << arma::endl;
         try {
-          double tmp = MH_step(a_xib_samp(k), c_tuning_par_xi, (d)*n_I, kappa2b_samp(k), arma::vectorise(thetab_sr_samp.col(k)), b_xi, nu_xi, d1, d2);
+          //double tmp = shrinkTVP::DG_MH_step(a_xib_samp(k), c_tuning_par_xi, (d)*n_I, kappa2b_samp(k), arma::vectorise(thetab_sr_samp.col(k)), b_xi, nu_xi, d1, d2);
+          double tmp = 1.0;
           a_xib_samp(k) = tmp;
         } catch(...) {
           a_xib_samp(k) = arma::datum::nan;
           if (succesful == true){
-            fail = "sample forward a_xi";
+            fail = "sample backward a_xi";
             fail_iter = j + 1;
             succesful = false;
           }
@@ -828,12 +855,13 @@ List do_shrinkTVP(arma::mat y_fwd,
       for(int k = 0; k < n_I; k++){
         double before = a_taub_samp(k);
         try {
-          double tmp = MH_step(a_taub_samp(k), c_tuning_par_tau, (d)*n_I, lambda2b_samp(k), arma::vectorise(betab_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
+          //double tmp = shrinkTVP::DG_MH_step(a_taub_samp(k), c_tuning_par_tau, (d)*n_I, lambda2b_samp(k), arma::vectorise(betab_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
+          double tmp = 1.0;
           a_taub_samp(k) = tmp;
         } catch(...){
           a_taub_samp(k) = arma::datum::nan;
           if (succesful == true){
-            fail = "sample forward a_tau";
+            fail = "sample backward a_tau";
             fail_iter = j + 1;
             succesful = false;
           }
