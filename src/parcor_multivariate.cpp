@@ -75,7 +75,7 @@ Rcpp::List filter(arma::mat F1_fwd,
 
     if(!Qt.is_symmetric()){
       Qt = 0.5*Qt + 0.5*arma::trans(Qt);
-      arma::cout << "Qt is not symmetric \n" << arma::endl;
+      //arma::cout << "Qt is not symmetric \n" << arma::endl;
     }
 
     arma::dmat Qt_inv = arma::inv_sympd(Qt);
@@ -101,7 +101,7 @@ Rcpp::List filter(arma::mat F1_fwd,
     //St.slice(i) = 0.5*St.slice(i) + 0.5*arma::trans(St.slice(i));
     if(!St.is_symmetric()){
       St = 0.5 * St + 0.5 * arma::trans(St);
-      arma::cout << "St is not symmetric \n" << arma::endl;
+      //arma::cout << "St is not symmetric \n" << arma::endl;
     }
     if(i == 0){
       Ct(i) = (delta_m * Ck_0 * delta_m) - At * Qt * arma::trans(At);
@@ -206,7 +206,7 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
 
         if(!Rt.is_symmetric()){
           Rt = 0.5 * Rt + 0.5 * arma::trans(Rt);
-          arma::cout << "Rt is not symmetric \n" << arma::endl;
+          //arma::cout << "Rt is not symmetric \n" << arma::endl;
         }
         arma::mat Rtp1_inv = arma::inv_sympd(Rt);
         arma::mat Bt = Rcpp::as<arma::mat>(Ct(i)) * Rtp1_inv;
