@@ -11,7 +11,6 @@
 #include "shared/pDIC_multivariate.hpp"
 using namespace Rcpp;
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
-// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::export]]
 
 Rcpp::List filter(arma::mat F1_fwd,
@@ -30,19 +29,18 @@ Rcpp::List filter(arma::mat F1_fwd,
   arma::colvec mk_0(n_I2, arma::fill::zeros);
   arma::mat Ck_0(n_I2, n_I2, arma::fill::eye);
   double n_0 = 1.0;
-  arma::dmat at(n_I2, n_t, arma::fill::zeros);
   arma::dmat mt(n_I2, n_t, arma::fill::zeros);
-  arma::dmat Rt(n_I2, n_I2, arma::fill::zeros);
   arma::mat F1t;
   Rcpp::List Ct(n_t);
-  arma::dcube Qt(n_I, n_I, n_t);
+  arma::mat Qt(n_I, n_I);
   arma::mat St_sqp(n_I, n_I, arma::fill::zeros);
-  arma::dcube St(n_I, n_I, n_t);
+  arma::mat St(n_I, n_I);
+  //arma::dcube St(n_I, n_I, n_t);
   arma::dmat S_comp(n_I, n_I, arma::fill::zeros);
-  arma::dmat ft(n_I, n_t, arma::fill::zeros);
   arma::dmat At(n_I2, n_I, arma::fill::zeros);
   arma::dmat F1(n_I, n_t, arma::fill::zeros);
   arma::dmat yt(n_I, n_t, arma::fill::zeros);
+  arma::colvec et;
   int ubound = 0;
   int lbound = 0;
   if(type_num == 1){
@@ -50,7 +48,7 @@ Rcpp::List filter(arma::mat F1_fwd,
     lbound = P;
     mt.col(P - 1) = mk_0;
     Ct(P - 1) = Ck_0;
-    St.slice(P - 1) = S_0;
+    St = S_0;
     F1 = F1_bwd;
     yt = F1_fwd;
   }else{
@@ -65,46 +63,60 @@ Rcpp::List filter(arma::mat F1_fwd,
   for(int i = lbound; i < ubound; i++){
     F1t = arma::trans(gen_Ft(F1.col(i - sign * m)));
     if(i == 0){
-      at.col(i) = mk_0;
-      Rt = delta_m *  Ck_0 * delta_m;
-      Qt.slice(i) = F1t * Rt * arma::trans(F1t) + S_0;
+      Qt = F1t * (delta_m * Ck_0 * delta_m) * arma::trans(F1t) + S_0;
       St_sqp = arma::sqrtmat_sympd(S_0);
     }else{
-      at.col(i) = mt.col(i-1);
-      Rt = delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m;
-      Qt.slice(i) = F1t * Rt * arma::trans(F1t) + St.slice(i-1);
-      St_sqp = arma::sqrtmat_sympd(St.slice(i-1));
+      //Qt = F1t * (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) * arma::trans(F1t) + St.slice(i-1);
+      Qt = F1t * (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) * arma::trans(F1t) + St;
+      //St_sqp = arma::sqrtmat_sympd(St.slice(i-1));
+      St_sqp = arma::sqrtmat_sympd(St);
     }
-    Rt = 0.5*Rt + 0.5*arma::trans(Rt);
-    Qt.slice(i) = 0.5*Qt.slice(i) + 0.5*arma::trans(Qt.slice(i));
-    ft.col(i) = F1t * at.col(i);
-    arma::dmat Qt_inv = arma::inv_sympd(Qt.slice(i));
-    Qt_inv = 0.5*Qt_inv + 0.5*arma::trans(Qt_inv);
+
+
+    if(!Qt.is_symmetric()){
+      Qt = 0.5*Qt + 0.5*arma::trans(Qt);
+    }
+
+    arma::dmat Qt_inv = arma::inv_sympd(Qt);
+    if(!Qt_inv.is_symmetric()){
+      Qt_inv = 0.5*Qt_inv + 0.5*arma::trans(Qt_inv);
+    }
+
     arma::dmat Qt_inv_sq = arma::sqrtmat_sympd(Qt_inv);
-    At = Rt * arma::trans(F1t) * Qt_inv;
-    arma::colvec et = yt.col(i) - ft.col(i);
+
+    if(i == 0){
+      At = (delta_m * Ck_0 * delta_m) * arma::trans(F1t) * Qt_inv;
+      et = yt.col(i) - F1t * mk_0;
+      mt.col(i) = mk_0 + At * et;
+    }else{
+      At = (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) * arma::trans(F1t) * Qt_inv;
+      et = yt.col(i) - F1t * mt.col(i-1);
+      mt.col(i) = mt.col(i-1) + At * et;
+    }
+
     S_comp += St_sqp * Qt_inv_sq * et * arma::trans(et) * Qt_inv_sq * St_sqp;
-    St.slice(i) = (n_0*S_0 + S_comp)/(n_0 + i + 1);
-    St.slice(i) = 0.5*St.slice(i) + 0.5*arma::trans(St.slice(i));
-    Ct(i) = Rt - At * Qt.slice(i) * arma::trans(At);
-    mt.col(i) = at.col(i) + At * et;
+    //St.slice(i) = (n_0*S_0 + S_comp)/(n_0 + i + 1);
+    St = (n_0*S_0 + S_comp)/(n_0 + i + 1);
+    //St.slice(i) = 0.5*St.slice(i) + 0.5*arma::trans(St.slice(i));
+    St = 0.5 * St + 0.5 * arma::trans(St);
+    if(i == 0){
+      Ct(i) = (delta_m * Ck_0 * delta_m) - At * Qt * arma::trans(At);
+    }else{
+      Ct(i) = (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) - At * Qt * arma::trans(At);
+    }
+
     if((i >= P) & (i < n_t - P) ){
-      arma::vec tmp_ll = dmvnorm(arma::trans(yt.col(i)), ft.col(i), Qt.slice(i), true);
+      arma::vec tmp_ll = dmvnorm(arma::trans(yt.col(i)), F1t * mt.col(i-1), Qt, true);
       ll += arma::sum(tmp_ll);
     }
   }
     return Rcpp::List::create(Rcpp::Named("ll") = ll,
                               Rcpp::Named("mt") = mt,
-                              Rcpp::Named("at") = at,
                               Rcpp::Named("Ct") = Ct,
-                              Rcpp::Named("St") = St,
-                              Rcpp::Named("Qt") = Qt,
-                              Rcpp::Named("yt") = yt,
-                              Rcpp::Named("ft") = ft);
+                              Rcpp::Named("St") = St);
 }
 
 // [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::plugins(cpp11)]]
 // [[Rcpp::export]]
 
 Rcpp::List filter_smooth(arma::mat F1_fwd,
@@ -150,6 +162,7 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     double ll_max = filter_opt["ll"];
     arma::rowvec delta_min = delta.row(0);
     ll(0) = ll_max;
+
     for(int j = 1; j < delta_n; j++){
         Rcpp::List filter_new = filter(F1_fwd, F1_bwd, S_0, m, delta.row(j), type_num, P, n_t, n_I, n_I2);
         double ll_new = filter_new["ll"];
@@ -163,10 +176,9 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     }
 
     arma::mat mt = filter_opt["mt"];
-    arma::mat at = filter_opt["at"];
     Rcpp::List Ct = filter_opt["Ct"];
     arma::mat Rt(n_I2, n_I2, arma::fill::zeros);
-    arma::cube St = filter_opt["St"];
+    //arma::cube St = filter_opt["St"];
     arma::mat F1t;
 
     if(type_num == 1){
@@ -180,16 +192,21 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     // This following part is smoothing.
     // initializing.
     mnt.col(ubound - 1) = mt.col(ubound - 1);
-    Cnt(ubound - 1) = Rcpp::as<arma::mat>(Ct(ubound - 1));
+    if(uncertainty){
+      Cnt(ubound - 1) = Rcpp::as<arma::mat>(Ct(ubound - 1));
+    }
+
     arma::mat delta_m = arma::diagmat(arma::pow(delta_min, -0.5));
     for(int i = (ubound - 2); i > (lbound - 1); i--){
         Rt = delta_m * Rcpp::as<arma::mat>(Ct(i)) * delta_m;
         Rt = 0.5*Rt + 0.5*arma::trans(Rt);
         arma::mat Rtp1_inv = arma::inv_sympd(Rt);
         arma::mat Bt = Rcpp::as<arma::mat>(Ct(i)) * Rtp1_inv;
-        mnt.col(i) = mt.col(i) + Bt * (mnt.col(i+1) - at.col(i+1));
-        Cnt(i) = Rcpp::as<arma::mat>(Ct(i)) - Bt * (Rt - Rcpp::as<arma::mat>(Cnt(i+1)))*arma::trans(Bt);
-        Cnt(i) = 0.5*Rcpp::as<arma::mat>(Cnt(i)) + 0.5*arma::trans(Rcpp::as<arma::mat>(Cnt(i)));
+        mnt.col(i) = mt.col(i) + Bt * (mnt.col(i+1) - mt.col(i));
+        if(uncertainty){
+          Cnt(i) = Rcpp::as<arma::mat>(Ct(i)) - Bt * (Rt - Rcpp::as<arma::mat>(Cnt(i+1)))*arma::trans(Bt);
+          Cnt(i) = 0.5*Rcpp::as<arma::mat>(Cnt(i)) + 0.5*arma::trans(Rcpp::as<arma::mat>(Cnt(i)));
+        }
     }
 
     for(int i = lbound; i < ubound; i++){
@@ -199,7 +216,7 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
 
 
     if(DIC){
-        Rcpp::List tmp_DIC = compute_DIC(filter_opt, F1, sample_size, m, P, chains);
+        Rcpp::List tmp_DIC = compute_DIC(filter_opt, yt, F1, delta_min, sample_size, m, P, chains);
         ll_DIC = tmp_DIC["ll"];
         es_DIC = tmp_DIC["ES_mean"];
     }
@@ -212,18 +229,18 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
                               Rcpp::Named("delta_min") = delta_min,
                               //Rcpp::Named("filter_opt") = filter_opt,
                               Rcpp::Named("ll") = ll,
-                              Rcpp::Named("St") = St,
+                              //Rcpp::Named("St") = St,
+                              Rcpp::Named("St") =filter_opt["St"],
                               Rcpp::Named("ES_mean") = es_DIC,
                               Rcpp::Named("ll_DIC") = ll_DIC);
         }else{
                     return Rcpp::List::create(Rcpp::Named("F1new") = F1_new,
                               Rcpp::Named("mnt") = mnt,
-                              //Rcpp::Named("Cnt") = Cnt,
                               Rcpp::Named("ll_max") = ll_max,
                               Rcpp::Named("delta_min") = delta_min,
-                              //Rcpp::Named("filter_opt") = filter_opt,
                               Rcpp::Named("ll") = ll,
-                              Rcpp::Named("St") = St,
+                              //Rcpp::Named("St") = St,
+                              Rcpp::Named("St") =filter_opt["St"],
                               Rcpp::Named("ES_mean") = es_DIC,
                               Rcpp::Named("ll_DIC") = ll_DIC);
         }
@@ -231,127 +248,6 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
 
 
 }
-
-
-
-// // [[Rcpp::depends(RcppArmadillo)]]
-// // [[Rcpp::export]]
-// Rcpp::List  run_parcor(arma::mat F1,
-//                        arma::mat S_0,
-//                        arma::cube delta,
-//                        int P,
-//                        int sample_size,
-//                        int chains,
-//                        bool DIC,
-//                        bool backward,
-//                        bool uncertainty
-// ){
-//     int n_t = F1.n_cols;
-//     int n_I = F1.n_rows;
-//     int n_I2 = std::pow(n_I, 2);
-//     int n_delta = delta.slice(0).n_rows;
-//     arma::mat F1_fwd(n_I, n_t, arma::fill::zeros);
-//     arma::mat F1_bwd(n_I, n_t, arma::fill::zeros);
-//     Rcpp::List phi_fwd(P);
-//     Rcpp::List phi_bwd(P);
-//     arma::cube akm_prev(n_I, n_t, P);
-//     arma::cube dkm_prev(n_I, n_t, P);
-//     arma::vec ll_fwd(P);
-//     arma::vec ll_bwd(P);
-//     arma::mat ll(P, n_delta, arma::fill::zeros);
-//     arma::mat delta_fwd(P, n_I2, arma::fill::zeros);
-//     arma::mat delta_bwd(P, n_I2, arma::fill::zeros);
-//     Rcpp::List St_fwd(P);
-//     Rcpp::List St_bwd(P);
-//     Rcpp::List ar_coef_prev;
-//     Rcpp::List ar_coef(P);
-//     Rcpp::List Cnt_fwd(P);
-//     Rcpp::List Cnt_bwd(P);
-//     //Rcpp::List filter_fwd(P);
-//     //Rcpp::List filter_bwd(P);
-//     arma::vec val_DIC(P, arma::fill::zeros);
-//     arma::vec ll_DIC(P, arma::fill::zeros);
-//     arma::vec es_DIC(P, arma::fill::zeros); //effective sample size
-//
-//   //initialize
-//     F1_fwd = F1;
-//     F1_bwd = F1;
-//     Rcpp::List tmp_fwd;
-//     Rcpp::List tmp_bwd;
-//     for(int i = 0; i < P; i++){
-//         //Rprintf("a \n");
-//         //std::future<Rcpp::List> t1 = std::async(filter_smooth, F1_bwd, G, F1_fwd, mk_0, Ck_0, n_0, S_0, i+1, delta.slice(i), 1, P, DIC, sample_size, chains);
-//         //Rprintf("b \n");
-//         //std::future<Rcpp::List> t2 = std::async(filter_smooth, F1_fwd, G, F1_bwd, mk_0, Ck_0, n_0, S_0, i+1, delta.slice(i), -1, P, false, sample_size, chains);
-//
-//         //Rcpp::List tmp_fwd = t1.get();
-//         //Rcpp::List tmp_bwd = t2.get();
-//         tmp_fwd = filter_smooth(F1_fwd, F1_bwd, S_0, i+1, delta.slice(i), 1, P, DIC,
-//                                            sample_size, chains, uncertainty);
-//         Rprintf("Forward computation is completed!\n");
-//         delta_fwd.row(i) = Rcpp::as<arma::mat>(tmp_fwd["delta_min"]);
-//         if(backward){
-//             tmp_bwd = filter_smooth(F1_fwd, F1_bwd, S_0, i+1, delta_fwd.row(i), -1, P, false,
-//                                     sample_size, chains, uncertainty);
-//         }else{
-//             tmp_bwd = filter_smooth(F1_fwd, F1_bwd, S_0, i+1, delta.slice(i), -1, P, false,
-//                                     sample_size, chains, uncertainty);
-//         }
-//         Rprintf("Backward computation is completed!\n");
-//         delta_bwd.row(i) = Rcpp::as<arma::mat>(tmp_bwd["delta_min"]);
-//         ll_DIC(i) = tmp_fwd["ll_DIC"];
-//         es_DIC(i) = tmp_fwd["ES_mean"];
-//
-//         if(uncertainty){
-//           Cnt_fwd(i) = tmp_fwd["Cnt"];
-//           Cnt_bwd(i) = tmp_bwd["Cnt"];
-//         }
-//
-//         //filter_fwd(i) = tmp_fwd["filter_opt"];
-//         //filter_bwd(i) = tmp_bwd["filter_opt"];
-//         St_fwd(i) = tmp_fwd["St"];
-//         St_bwd(i) = tmp_bwd["St"];
-//         F1_fwd = Rcpp::as<arma::mat>(tmp_fwd["F1new"]);
-//         F1_bwd = Rcpp::as<arma::mat>(tmp_bwd["F1new"]);
-//         phi_fwd(i) = Rcpp::as<arma::mat>(tmp_fwd["mnt"]);
-//         phi_bwd(i) = Rcpp::as<arma::mat>(tmp_bwd["mnt"]);
-//         ll_fwd(i) = tmp_fwd["ll_max"];
-//         ll_bwd(i) = tmp_bwd["ll_max"];
-//         ll.row(i) = Rcpp::as<arma::rowvec>(tmp_fwd["ll"]);
-//
-//
-//         if(i == 0){
-//             ar_coef(i) = PARCOR_to_AR(Rcpp::as<arma::mat>(phi_fwd(i)), Rcpp::as<arma::mat>(phi_bwd(i)), akm_prev, dkm_prev, n_I, i, P);
-//         }else{
-//             ar_coef_prev = ar_coef(i - 1);
-//             akm_prev = Rcpp::as<arma::cube>(ar_coef_prev["forward"]);
-//             dkm_prev = Rcpp::as<arma::cube>(ar_coef_prev["backward"]);
-//             ar_coef(i) = PARCOR_to_AR(Rcpp::as<arma::mat>(phi_fwd(i)), Rcpp::as<arma::mat>(phi_bwd(i)), akm_prev, dkm_prev, n_I, i, P);
-//         }
-//         Rprintf("iterations: %i / %i \n", i+1,  P);
-//         Rprintf("Forward likelihood at %i stage: %f; Backward likelihood at %i stage: %f. \n", i+1, ll_fwd(i), i+1, ll_bwd(i));
-//     }
-//     val_DIC = 2*(arma::cumsum(es_DIC) - ll_DIC);
-//     return Rcpp::List::create(Rcpp::Named("phi_fwd") = phi_fwd,
-//                               Rcpp::Named("phi_bwd") = phi_bwd,
-//                               Rcpp::Named("St_fwd") = St_fwd,
-//                               Rcpp::Named("St_bwd") = St_bwd,
-//                               Rcpp::Named("ll_fwd") = ll_fwd,
-//                               Rcpp::Named("ll_bwd") = ll_bwd,
-//                               Rcpp::Named("delta_fwd") = delta_fwd,
-//                               Rcpp::Named("delta_bwd") = delta_bwd,
-//                               Rcpp::Named("ll") = ll,
-//                               Rcpp::Named("ar_coef") = ar_coef,
-//                               Rcpp::Named("Cnt_fwd") = Cnt_fwd,
-//                               Rcpp::Named("Cnt_bwd") = Cnt_bwd,
-//                               Rcpp::Named("DIC") = val_DIC,
-//                               Rcpp::Named("ES_mean") = es_DIC,
-//                               Rcpp::Named("ll_DIC") = ll_DIC);
-//                               //Rcpp::Named("Cnt_fwd") = Cnt_fwd,
-//                               //Rcpp::Named("Cnt_bwd") = Cnt_bwd,
-//                               //Rcpp::Named("filter_fwd") = filter_fwd,
-//                               //Rcpp::Named("filter_bwd") = filter_bwd,);
-// }
 
 
 

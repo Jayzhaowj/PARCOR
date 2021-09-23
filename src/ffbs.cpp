@@ -344,7 +344,7 @@ void update_beta_tilde(arma::mat& beta_nc,
   int d = x.n_cols;
 
   arma::mat mt(d, N+1, arma::fill::zeros);
-  arma::cube Rt(d, d, N+1, arma::fill::zeros);
+  //arma::cube Rt(d, d, N+1, arma::fill::zeros);
   arma::cube Ct(d, d, N+1, arma::fill::zeros);
   arma::mat mT(d, N+1, arma::fill::zeros);
   arma::cube CT(d, d, N+1, arma::fill::zeros);
@@ -378,11 +378,11 @@ void update_beta_tilde(arma::mat& beta_nc,
 
   for(int t = 1; t < N+1; t++){
 
-    Rt.slice(t) = Ct.slice(t-1) + I_d;
-    Rt.slice(t) = 0.5*Rt.slice(t) + 0.5*arma::trans(Rt.slice(t));
+    //Rt.slice(t) = Ct.slice(t-1) + I_d;
+    //Rt.slice(t) = 0.5*Rt.slice(t) + 0.5*arma::trans(Rt.slice(t));
     ft(t-1) = arma::as_scalar(Ft.row(t-1)*mt.col(t-1));
-    Qt = arma::as_scalar(Ft.row(t-1)*Rt.slice(t)*arma::trans(Ft.row(t-1)) + St_tmp(t-1));
-
+    //Qt = arma::as_scalar(Ft.row(t-1)*Rt.slice(t)*arma::trans(Ft.row(t-1)) + St_tmp(t-1));
+    Qt = arma::as_scalar(Ft.row(t-1)*(Ct.slice(t-1) + I_d)*arma::trans(Ft.row(t-1)) + St_tmp(t-1));
     St_sq = std::sqrt(St_tmp(t-1));
     Qt_inv_sq = std::sqrt(1.0/Qt);
     et = yt_star(t-1) - ft(t-1);
@@ -402,9 +402,10 @@ void update_beta_tilde(arma::mat& beta_nc,
     //   Rcout << "Ctm1: " << (Ct.slice(t-1)).has_nan() << "\n";
     //   break;
     // }
-    At = Rt.slice(t)*arma::trans(Ft.row(t-1))/Qt;
+    //At = Rt.slice(t)*arma::trans(Ft.row(t-1))/Qt;
+    At = (Ct.slice(t-1) + I_d)*arma::trans(Ft.row(t-1))/Qt;
     mt.col(t) = mt.col(t-1) + At*et;
-    Ct.slice(t) = Rt.slice(t) - At*Qt*arma::trans(At);
+    Ct.slice(t) = Ct.slice(t-1) + I_d - At*Qt*arma::trans(At);
     Ct.slice(t) = 0.5*Ct.slice(t) + 0.5*arma::trans(Ct.slice(t));
     // if((Ct.slice(t)).has_nan()){
     //   Rcout << "t: " << t << "\n";
@@ -434,12 +435,13 @@ void update_beta_tilde(arma::mat& beta_nc,
     //}
     //Rt.slice(t+1) = .5*Rt.slice(t+1) + 0.5*arma::trans(Rt.slice(t+1));
     //Rtp1_inv = arma::inv_sympd(Rt.slice(t+1));
-    Rtp1_inv = arma::inv(Rt.slice(t+1));
+    //Rtp1_inv = arma::inv(Rt.slice(t+1));
+    Rtp1_inv = arma::inv(Ct.slice(t) + I_d);
     //Rtp1_inv = I_d;
     Bt = Ct.slice(t) * Rtp1_inv;
     //mT.col(t) = mt.col(t) + Bt*(mT.col(t+1) - mt.col(t));
     beta_nc.row(t) = arma::trans(mt.col(t) + Bt*(arma::trans(beta_nc.row(t+1)) - mt.col(t)));
-    CT.slice(t) = Ct.slice(t) - Bt*(Rt.slice(t+1) - CT.slice(t+1))*arma::trans(Bt);
+    CT.slice(t) = Ct.slice(t) - Bt*(Ct.slice(t) + I_d - CT.slice(t+1))*arma::trans(Bt);
     CT.slice(t) = 0.5*CT.slice(t) + 0.5*arma::trans(CT.slice(t));
     arma::mat tmp = Ct.slice(t) + arma::trans(beta_nc.row(t))*beta_nc.row(t);
     beta2_nc.row(t) = arma::trans(tmp.diag());
