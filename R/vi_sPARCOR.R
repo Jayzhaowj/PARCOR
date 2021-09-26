@@ -5,12 +5,10 @@ vi_sPARCOR <- function(y, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_ta
 
   if(skip){
     ## skip the first stage by using PARCOR model
-    phi_fwd <- array(0, dim = c(n_t, K^2))
-    phi_bwd <- array(0, dim = c(n_t, K^2))
     if(missing(delta)){
       ### Set up discount ###
       grid_seq <- seq(0.95, 1, 0.01)
-      tmp <- as.matrix(expand.grid(grid_seq, grid_seq))
+      tmp <- as.matrix(grid_seq)
       tmp_dim <- dim(tmp)
       delta <- array(dim = c(tmp_dim[1], K^2, 1))
     }
