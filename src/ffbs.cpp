@@ -351,7 +351,7 @@ void update_beta_tilde(arma::mat& beta_nc,
 
   arma::vec St_tmp(N+1, arma::fill::zeros);
 
-  double St_sq;
+  //double St_sq;
   double S_comp = 0.0;
 
 
@@ -367,7 +367,7 @@ void update_beta_tilde(arma::mat& beta_nc,
   arma::vec ft(N, arma::fill::zeros);
   double Qt;
 
-  double Qt_inv_sq;
+  //double Qt_inv_sq;
   arma::vec At;
   double et;
   Ct.slice(0) = I_d;
@@ -383,10 +383,11 @@ void update_beta_tilde(arma::mat& beta_nc,
     ft(t-1) = arma::as_scalar(Ft.row(t-1)*mt.col(t-1));
     //Qt = arma::as_scalar(Ft.row(t-1)*Rt.slice(t)*arma::trans(Ft.row(t-1)) + St_tmp(t-1));
     Qt = arma::as_scalar(Ft.row(t-1)*(Ct.slice(t-1) + I_d)*arma::trans(Ft.row(t-1)) + St_tmp(t-1));
-    St_sq = std::sqrt(St_tmp(t-1));
-    Qt_inv_sq = std::sqrt(1.0/Qt);
+    //St_sq = std::sqrt(St_tmp(t-1));
+    //Qt_inv_sq = std::sqrt(1.0/Qt);
     et = yt_star(t-1) - ft(t-1);
-    S_comp += St_sq * Qt_inv_sq * et * et * Qt_inv_sq * St_sq;
+    //S_comp += St_sq * Qt_inv_sq * et * et * Qt_inv_sq * St_sq;
+    S_comp += St_tmp(t-1) *  et * et / Qt;
     St_tmp(t) = (n_0*S_0 + S_comp)/(n_0 + t);
     // if(std::isnan(St_tmp(t))){
     //   Rcout << "t: " << t << "\n";
