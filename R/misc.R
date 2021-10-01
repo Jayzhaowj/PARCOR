@@ -20,7 +20,8 @@ obtain_resid_var <- function(phi_chol_fwd, SIGMA, n_t, n_I, d){
   upper_tri <- diag(n_I)
   for(i in 1:n_t){
     upper_tri[upper.tri(upper_tri)] <- phi_chol_fwd[i, , d]
-    St[, , i] <- t(upper_tri) %*% diag(SIGMA[n_t-d, ]) %*% upper_tri
+    upper_tri_inv <- solve(upper_tri)
+    St[, , i] <- t(upper_tri_inv) %*% diag(SIGMA[n_t-d, ]) %*% upper_tri_inv
   }
   return(St)
 }

@@ -12,7 +12,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 
-Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
+Rcpp::List cp_sd(arma::cube phi, arma::cube SIGMA, arma::vec w){
     // phi is ar coefficient in array type;
        // SIGMA is innovation variance in matrix type;
        // w is the frequency band in vector type;
@@ -55,7 +55,7 @@ Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w){
             }
             PHI_inv = arma::inv(PHI);
             PHI_conj_inv = arma::inv(arma::trans(PHI));
-            f_spec.slice(j) = PHI_inv * SIGMA * PHI_conj_inv;
+            f_spec.slice(j) = PHI_inv * SIGMA.slice(i) * PHI_conj_inv;
             arma::cx_mat PHI_norm_tmp = arma::trans(PHI) * PHI;
             arma::cx_rowvec PHI_norm = arma::trans(arma::sqrt(PHI_norm_tmp.diag()));
             //partial directed coherence

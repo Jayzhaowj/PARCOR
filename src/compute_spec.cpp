@@ -87,8 +87,12 @@ Rcpp::List compute_spec(arma::cube phi, arma::cube SIGMA,
 
         sd1(i, j) = log(f_dens(index1, index1)); //spectral density of the first process
         sd2(i, j) = log(f_dens(index2, index2)); //spectral density of the second process
-        sd3(i, j) = (f_dens(index1, index2)*f_dens(index1, index2))/(f_dens(index1, index1) * f_dens(index2, index2)); // squared coherence between two processes
-        sd4(i, j) = (g_dens(index1, index2)*g_dens(index1, index2))/(g_dens(index1, index1) * g_dens(index2, index2)); // squared partial coherence between two processes
+        //sd3(i, j) = (f_dens(index1, index2)*f_dens(index1, index2))/(f_dens(index1, index1) * f_dens(index2, index2)); // squared coherence between two processes
+        sd3(i, j) = exp(2*log(f_dens(index1, index2)) - log(f_dens(index1, index1)) - log(f_dens(index2, index2))); // squared coherence between two processes
+        //sd4(i, j) = (g_dens(index1, index2)*g_dens(index1, index2))/(g_dens(index1, index1) * g_dens(index2, index2)); // squared partial coherence between two processes
+        sd4(i, j) = exp(2*log(g_dens(index1, index2)) - log(g_dens(index1, index1)) - log(g_dens(index2, index2))); // squared partial coherence between two processes
+
+
         sd5(i, j) = kappa_dens(index1, index2);
         sd6(i, j) = DTF_dens(index1, index2);
       }

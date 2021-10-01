@@ -656,8 +656,6 @@ List vi_shrinkTVP(arma::mat y_fwd,
           }
           //(beta2b_nc_new.slice(m-1)).rows(n_1-1, n_T-1) = beta2_nc_tmp.rows(1, N_m);
           sigma2b_new.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
-          yb.slice(m).col(k).rows(n_1-1, n_T-1) = y_tmp;
-          y_tmp = yb.slice(m-1).col(k).rows(n_1-1, n_T-1);
         } catch (...){
           //beta_nc_tmp.fill(nanl(""));
           if (succesful == true){
@@ -1082,6 +1080,9 @@ List vi_shrinkTVP(arma::mat y_fwd,
                               _["beta_nc"] = List::create(_["f"] = betaf_nc_old, _["b"] = betab_nc_old),
                               _["beta"] = List::create(_["f"] = betaf, _["b"] = betab),
                               _["beta_chol"] = List::create(_["f"] = betaf_chol, _["b"] = betab_chol),
+                              _["beta_mean_chol"] = List::create(_["f"] = betaf_mean_chol_old, _["b"] = betab_mean_chol_old),
+                              _["theta_sr_chol"] = List::create(_["f"] = thetaf_sr_chol_old, _["b"] = thetab_sr_chol_old),
+                              _["beta_nc_chol"] = List::create(_["f"] = betaf_nc_chol_old, _["b"] = betab_nc_chol_old),
                               _["xi2"] = List::create(_["f"] = xi2f_old, _["b"] = xi2b_old),
                               _["tau2"] = List::create(_["f"] = tau2f_old, _["b"] = tau2b_old),
                               _["xi2_inv"] = List::create(_["f"] = xi2f_inv_old, _["b"] = xi2b_inv_old),

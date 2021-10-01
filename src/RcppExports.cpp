@@ -12,13 +12,13 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cp_sd
-Rcpp::List cp_sd(arma::cube phi, arma::mat SIGMA, arma::vec w);
+Rcpp::List cp_sd(arma::cube phi, arma::cube SIGMA, arma::vec w);
 RcppExport SEXP _PARCOR_cp_sd(SEXP phiSEXP, SEXP SIGMASEXP, SEXP wSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::cube >::type phi(phiSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type SIGMA(SIGMASEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type SIGMA(SIGMASEXP);
     Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
     rcpp_result_gen = Rcpp::wrap(cp_sd(phi, SIGMA, w));
     return rcpp_result_gen;
