@@ -39,7 +39,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
       main5 <- bquote("PDC: "*.(channel_names[ch2])%->%.(channel_names[ch1]))
       main6 <- bquote("DTF: "*.(channel_names[ch2])%->%.(channel_names[ch1]))
     }else if(wind){
-      x_coord <- seq(0, 1, length.out = n_t - 2*P)
+      x_coord <- seq(0, 1, length.out = n_t - 2*P_max)
       y_coord <- w
       names <- list(bquote('M'['X']), bquote('M'['Y']),
                  bquote('S'['X']), bquote('S'['Y']),
@@ -51,7 +51,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
       main5 <- bquote("PDC: "*.(names[[ch2]])%->%.(names[[ch1]]))
       main6 <- bquote("DTF: "*.(names[[ch2]])%->%.(names[[ch1]]))
     }else if(mice){
-      x_coord <- seq(0, 1, length.out = n_t - 2*P)
+      x_coord <- seq(0, 1, length.out = n_t - 2*P_max)
       y_coord <- w
       allen_labels <- c("SSp-ll.L","RSP.R","VISli.L","MOp.L","VISrl.R","VISal.L","SSp-n.L","SSs.L","SSp-n.R","SSp-m.R","TEa.L",
                         "SSp-bfd.L", "VISl.R","AUD.L","VISrl.L","VISal.R","SSp-m.L","VISpor.R","SSp-tr.R","MOp.R","AUD.R", "VISam.R" ,
@@ -66,7 +66,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
       main5 <- bquote("PDC: "*.(allen_labels[ch2])%->%.(allen_labels[ch1]))
       main6 <- bquote("DTF: "*.(allen_labels[ch2])%->%.(allen_labels[ch1]))
     }else{
-      x_coord <- seq(0, 1, length.out = n_t - 2*P)
+      x_coord <- seq(0, 1, length.out = n_t - 2*P_max)
       y_coord <- w
       if(est){
         main1 <- bquote(hat('g')[.(ch1)*','*.(ch1)]*'(t, '*omega*')')
@@ -92,7 +92,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        tmp <- sd[[1]][(P+1):(n_t - P),  ]
+        tmp <- sd[[1]][(P_max+1):(n_t - P_max),  ]
         filled.contour(x_coord, y_coord, tmp, main = main1,
                        color.palette = jet.colors, xlab = xlab, ylab = ylab, ...)
         cat('Graph has been drawn!\n')
@@ -104,7 +104,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        tmp <- sd[[2]][(P+1):(n_t - P),  ]
+        tmp <- sd[[2]][(P_max+1):(n_t - P_max),  ]
         filled.contour(x_coord, y_coord, tmp, main = main2,
                        color.palette = jet.colors, xlab = xlab, ylab = ylab, ...)
         cat('Graph has been drawn!\n')
@@ -116,7 +116,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        filled.contour(x_coord, y_coord, sd[[3]][(P+1):(n_t - P),  ], xlab = xlab, ylab = ylab,
+        filled.contour(x_coord, y_coord, sd[[3]][(P_max+1):(n_t - P_max),  ], xlab = xlab, ylab = ylab,
                        main = main3, color.palette = jet.colors, zlim = c(0, 1), ...)
 
         cat('Graph has been drawn!\n')
@@ -128,7 +128,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        filled.contour(x_coord, y_coord, sd[[4]][(P+1):(n_t - P),  ],
+        filled.contour(x_coord, y_coord, sd[[4]][(P_max+1):(n_t - P_max),  ],
                        main = main4, xlab = xlab, ylab = ylab,
                        color.palette = jet.colors, zlim = c(0, 1), ...)
         cat('Graph has been drawn!\n')
@@ -140,7 +140,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        filled.contour(x_coord, y_coord, sd[[5]][(P+1):(n_t - P),  ],
+        filled.contour(x_coord, y_coord, sd[[5]][(P_max+1):(n_t - P_max),  ],
                        main = main5, xlab = xlab, ylab = ylab,
                        color.palette = jet.colors, zlim = c(0, 1), ...)
         cat('Graph has been drawn!\n')
@@ -152,7 +152,7 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
         cat('Calculation has been completed! \n')
         jet.colors <- colorRampPalette(c("#00007F", "blue", "#007FFF", "cyan", "#7FFF7F",
                                          "yellow", "#FF7F00", "red", "#7F0000"))
-        filled.contour(x_coord, y_coord, sd[[6]][(P+1):(n_t - P),  ],
+        filled.contour(x_coord, y_coord, sd[[6]][(P_max+1):(n_t - P_max),  ],
                        main = main6, xlab = xlab, ylab = ylab,
                        color.palette = jet.colors, zlim = c(0, 1), ...)
         cat('Graph has been drawn!\n')
