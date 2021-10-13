@@ -26,7 +26,7 @@ void res_protector(double& x){
 void sample_beta_tilde(arma::mat& beta_nc_samp, arma::vec& y,
                        arma::mat& x, arma::vec& theta_sr,
                        arma::vec& beta_mean,
-                       int N, int n_I, double S_0,
+                       int N, int n_I,
                        arma::vec& St){
   // initialization
   int d = x.n_cols;
@@ -39,9 +39,9 @@ void sample_beta_tilde(arma::mat& beta_nc_samp, arma::vec& y,
 
   arma::vec St_tmp(N+1, arma::fill::zeros);
 
-  double St_sq;
-  double S_comp = 0.0;
-  double n_0 = 1.0;
+  //double St_sq;
+  //double S_comp = 0.0;
+  //double n_0 = 1.0;
 
   arma::vec yt_star = y - x*beta_mean;
   arma::colvec theta = arma::pow(theta_sr, 2);
@@ -53,12 +53,12 @@ void sample_beta_tilde(arma::mat& beta_nc_samp, arma::vec& y,
   arma::vec ft(N, arma::fill::zeros);
 
   double Qt;
-  double Qt_inv_sq;
+  //double Qt_inv_sq;
   arma::vec At;
   double et;
 
   Ct.slice(0) = I_d;
-  St_tmp(0) = S_0;
+  //St_tmp(0) = S_0;
 
   arma::mat Bt;
   arma::mat Rtp1_inv;
@@ -68,19 +68,20 @@ void sample_beta_tilde(arma::mat& beta_nc_samp, arma::vec& y,
     Rt.slice(t) = Ct.slice(t-1) + I_d;
     Rt.slice(t) = 0.5*Rt.slice(t) + 0.5*arma::trans(Rt.slice(t));
     ft(t-1) = arma::as_scalar(Ft.row(t-1)*mt.col(t-1));
-    Qt = arma::as_scalar(Ft.row(t-1) * Rt.slice(t) * arma::trans(Ft.row(t-1)) + St_tmp(t-1));
-    Qt_inv_sq = std::sqrt(1.0/Qt);
-    St_sq = std::sqrt(St_tmp(t-1));
+    //Qt = arma::as_scalar(Ft.row(t-1) * Rt.slice(t) * arma::trans(Ft.row(t-1)) + St_tmp(t-1));
+    Qt = arma::as_scalar(Ft.row(t-1) * Rt.slice(t) * arma::trans(Ft.row(t-1)) + St(t-1));
+    //Qt_inv_sq = std::sqrt(1.0/Qt);
+    //St_sq = std::sqrt(St_tmp(t-1));
 
     et = yt_star(t-1) - ft(t-1);
-    S_comp += St_sq * Qt_inv_sq * et * et * Qt_inv_sq * St_sq;
-    St_tmp(t) = (n_0*S_0 + S_comp)/(n_0 + t);
+    //S_comp += St_sq * Qt_inv_sq * et * et * Qt_inv_sq * St_sq;
+    //St_tmp(t) = (n_0*S_0 + S_comp)/(n_0 + t);
     At = Rt.slice(t) * arma::trans(Ft.row(t-1))/Qt;
     mt.col(t) = mt.col(t-1) + At * et;
     Ct.slice(t) = Rt.slice(t) - At * Qt * arma::trans(At);
 
   }
-  St = St_tmp.rows(1, N);
+  //St = St_tmp.rows(1, N);
   mT.col(N) = mt.col(N);
   CT.slice(N) = Ct.slice(N);
   CT.slice(N) = 0.5*CT.slice(N) + 0.5*arma::trans(CT.slice(N));
@@ -126,17 +127,7 @@ void sample_beta_tilde(arma::mat& beta_nc_samp, arma::vec& y,
   }
 }
 
-// void get_w(arma::mat& W, arma::mat& x, arma::mat& beta_nc_samp, int N, int n_I){
-//   arma::mat I_d = arma::eye(n_I, n_I);
-//   arma::mat xt;
-//   arma::mat xt_tilde;
-//   for(int t = 1; t < (N+1); t++){
-//     xt = arma::kron(I_d, x.row(t-1));
-//     xt_tilde = arma::kron(I_d, x.row(t-1));
-//     xt_tilde.each_row() %= (beta_nc_samp.col(t)).t();
-//     W.rows((t-1)*n_I, t*n_I-1) = arma::join_rows(xt, xt_tilde);
-//   }
-// }
+
 void sample_alpha(arma::vec& alpha_samp, arma::vec& y,
                   arma::mat& x, arma::mat& x_tilde,
                   arma::colvec& tau2, arma::colvec& xi2,
@@ -181,7 +172,8 @@ void sample_alpha(arma::vec& alpha_samp, arma::vec& y,
 }
 
 
-void resample_alpha_diff(arma::vec& alpha_samp, arma::mat betaenter, arma::vec& theta_sr, arma::vec& beta_mean, arma::mat beta_diff,  arma::vec& xi2, arma::vec& tau2, int d, int N){
+void resample_alpha_diff(arma::mat betaenter, arma::vec& theta_sr, arma::vec& beta_mean,
+                         arma::mat beta_diff,  arma::vec& xi2, arma::vec& tau2, int d, int N){
   arma::vec sign_sqrt = arma::sign(theta_sr);
   arma::colvec theta_sr_new(d, arma::fill::none);
   int p1_theta = -N/2;
@@ -207,8 +199,11 @@ void resample_alpha_diff(arma::vec& alpha_samp, arma::mat betaenter, arma::vec& 
     beta_mean_new(j) = R::rnorm(mu_beta_mean, std::sqrt(sigma2_beta_mean));
   }
 
-  alpha_samp = arma::join_cols(beta_mean_new, theta_sr_new);
-  std::for_each(alpha_samp.begin(), alpha_samp.end(), res_protector);
+  std::for_each(theta_sr_new.begin(), theta_sr_new.end(), res_protector);
+  std::for_each(beta_mean_new.begin(), beta_mean_new.end(), res_protector);
+
+  beta_mean = beta_mean_new;
+  theta_sr = theta_sr_new;
 }
 
 

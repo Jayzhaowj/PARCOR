@@ -41,8 +41,8 @@ filter_smooth <- function(F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sampl
     .Call(`_PARCOR_filter_smooth`, F1_fwd, F1_bwd, S_0, m, delta, type_num, P, DIC, sample_size, chains, uncertainty)
 }
 
-do_mcmc_sPARCOR <- function(y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip) {
-    .Call(`_PARCOR_do_mcmc_sPARCOR`, y_fwd, y_bwd, S_0, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, store_burn, ind, skip)
+do_mcmc_sPARCOR <- function(y_fwd, y_bwd, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, ind, skip, sv, Bsigma_sv, a0_sv, b0_sv, bmu, Bmu) {
+    .Call(`_PARCOR_do_mcmc_sPARCOR`, y_fwd, y_bwd, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, ind, skip, sv, Bsigma_sv, a0_sv, b0_sv, bmu, Bmu)
 }
 
 run_whittle <- function(phi_fwd, phi_bwd, n_I) {

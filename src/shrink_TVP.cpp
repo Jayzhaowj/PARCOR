@@ -1,6 +1,7 @@
 // [[Rcpp::depends(RcppArmadillo, RcppProgress)]]
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
+#include <stochvol.h>
 #include <progress.hpp>
 #include <math.h>
 //#include "sample_beta_McCausland.h"
@@ -11,38 +12,42 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 List do_mcmc_sPARCOR(arma::mat y_fwd,
-                  arma::mat y_bwd,
-                  double S_0,
-                  int d,
-                  int niter,
-                  int nburn,
-                  int nthin,
-                  double c0,
-                  double g0,
-                  double G0,
-                  double d1,
-                  double d2,
-                  double e1,
-                  double e2,
-                  bool learn_lambda2,
-                  bool learn_kappa2,
-                  double lambda2,
-                  double kappa2,
-                  bool learn_a_xi,
-                  bool learn_a_tau,
-                  double a_xi,
-                  double a_tau,
-                  double c_tuning_par_xi,
-                  double c_tuning_par_tau,
-                  double b_xi,
-                  double b_tau,
-                  double nu_xi,
-                  double nu_tau,
-                  bool display_progress,
-                  bool ret_beta_nc,
-                  bool store_burn,
-                  bool ind,
-                  bool skip) {
+                     arma::mat y_bwd,
+                     int d,
+                     int niter,
+                     int nburn,
+                     int nthin,
+                     double c0,
+                     double g0,
+                     double G0,
+                     double d1,
+                     double d2,
+                     double e1,
+                     double e2,
+                     bool learn_lambda2,
+                     bool learn_kappa2,
+                     double lambda2,
+                     double kappa2,
+                     bool learn_a_xi,
+                     bool learn_a_tau,
+                     double a_xi,
+                     double a_tau,
+                     double c_tuning_par_xi,
+                     double c_tuning_par_tau,
+                     double b_xi,
+                     double b_tau,
+                     double nu_xi,
+                     double nu_tau,
+                     bool display_progress,
+                     bool ret_beta_nc,
+                     bool ind,
+                     bool skip,
+                     bool sv,
+                     double Bsigma_sv,
+                     double a0_sv,
+                     double b0_sv,
+                     double bmu,
+                     double Bmu) {
 
   // progress bar setup
   arma::vec prog_rep_points = arma::round(arma::linspace(0, niter, 50));
@@ -56,12 +61,8 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
   int N = y_fwd.n_rows;
   int n_I = y_fwd.n_cols;
   int n_I2 = std::pow(n_I, 2);
-  int nsave;
-  if (store_burn){
-    nsave = std::floor(niter/nthin);
-  } else {
-    nsave = std::floor((niter - nburn)/nthin);
-  }
+  int nsave = std::floor((niter - nburn)/nthin);
+
 
   // Some index
   //int m = 1; // current stage
@@ -98,10 +99,83 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
   Rcpp::List SIGMAf_save(nsave);
   Rcpp::List SIGMAb_save(nsave);
 
-  arma::cube SIGMAf_samp(N, n_I, d, arma::fill::none);
-  arma::cube SIGMAb_samp(N, n_I, d, arma::fill::none);
+  arma::cube SIGMAf_samp(N, n_I, d, arma::fill::ones);
+  arma::cube SIGMAb_samp(N, n_I, d, arma::fill::ones);
 
+  arma::mat C0f_samp;
+  arma::mat C0b_samp;
+
+  Rcpp::List C0f_save(nsave);
+  Rcpp::List C0b_save(nsave);
+
+  double C0_tmp;
   arma::vec sigma2_tmp;
+
+  arma::vec sv_h_tmp;
+
+  Rcpp::List sv_muf_save(nsave);
+  Rcpp::List sv_mub_save(nsave);
+  arma::mat sv_muf_samp;
+  arma::mat sv_mub_samp;
+  double sv_mu_tmp;
+
+  Rcpp::List sv_phif_save(nsave);
+  Rcpp::List sv_phib_save(nsave);
+  arma::mat sv_phif_samp;
+  arma::mat sv_phib_samp;
+  double sv_phi_tmp;
+
+  Rcpp::List sv_sigmaf_save(nsave);
+  Rcpp::List sv_sigmab_save(nsave);
+  arma::mat sv_sigmaf_samp;
+  arma::mat sv_sigmab_samp;
+  double sv_sigma_tmp;
+
+  arma::mat sv_h0f_samp;
+  arma::mat sv_h0b_samp;
+  double sv_h0_tmp;
+  arma::vec datastand;
+
+  if(sv){
+    sv_muf_samp = arma::mat(n_I, d, arma::fill::ones);
+    sv_mub_samp = arma::mat(n_I, d, arma::fill::ones);
+
+    sv_phif_samp = arma::mat(n_I, d);
+    sv_phib_samp = arma::mat(n_I, d);
+
+    sv_phif_samp.fill(0.5);
+    sv_phib_samp.fill(0.5);
+
+    sv_sigmaf_samp = arma::mat(n_I, d, arma::fill::ones);
+    sv_sigmab_samp = arma::mat(n_I, d, arma::fill::ones);
+
+    sv_h0f_samp = arma::mat(n_I, d, arma::fill::zeros);
+    sv_h0b_samp = arma::mat(n_I, d, arma::fill::zeros);
+  }else{
+    C0f_samp = arma::mat(n_I, d, arma::fill::ones);
+    C0b_samp = arma::mat(n_I, d, arma::fill::ones);
+  }
+
+  // Objects required for stochvol to work
+  arma::uvec r(N); r.fill(5);
+  using stochvol::PriorSpec;
+  const PriorSpec prior_spec = {  // prior specification object for the update_*_sv functions
+    PriorSpec::Latent0(),  // stationary prior distribution on priorlatent0
+    PriorSpec::Mu(PriorSpec::Normal(bmu, std::sqrt(Bmu))),  // normal prior on mu
+    PriorSpec::Phi(PriorSpec::Beta(a0_sv, b0_sv)),  // stretched beta prior on phi
+    PriorSpec::Sigma2(PriorSpec::Gamma(0.5, 0.5 / Bsigma_sv))  // normal(0, Bsigma) prior on sigma
+  };  // heavy-tailed, leverage, regression turned off
+  using stochvol::ExpertSpec_FastSV;
+  const ExpertSpec_FastSV expert {  // very expert settings for the Kastner, Fruehwirth-Schnatter (2014) sampler
+    true,  // interweave
+    stochvol::Parameterization::CENTERED,  // centered baseline always
+    1e-8,  // B011inv,
+    1e-12,  //B022inv,
+    2,  // MHsteps,
+    ExpertSpec_FastSV::ProposalSigma2::INDEPENDENCE,  // independece proposal for sigma
+    -1,  // unused for independence prior for sigma
+    ExpertSpec_FastSV::ProposalPhi::IMMEDIATE_ACCEPT_REJECT_NORMAL  // immediately reject (mu,phi,sigma) if proposed phi is outside (-1, 1)
+  };
 
   Rcpp::List thetaf_sr_save(nsave);
   Rcpp::List thetab_sr_save(nsave);
@@ -364,6 +438,15 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         tau2_tmp = tau2f_samp.slice(m-1).col(k);
         xi2_tmp = xi2f_samp.slice(m-1).col(k);
         sigma2_tmp = SIGMAf_samp.slice(m-1).col(k).rows(n_1-1, n_T-1);
+        if(sv){
+          sv_mu_tmp = sv_muf_samp(k, m-1);
+          sv_phi_tmp = sv_phif_samp(k, m-1);
+          sv_sigma_tmp = sv_sigmaf_samp(k, m-1);
+          sv_h_tmp = arma::log(sigma2_tmp);
+          sv_h0_tmp = sv_h0f_samp(k, m-1);
+        }else{
+          C0_tmp = C0f_samp(k, m-1);
+        }
 
         if(!ind){
           if(k == 1){
@@ -395,7 +478,7 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         //Rcout << "Hello 2" << "\n";
         // sample beta_nc
         try {
-          sample_beta_tilde(beta_nc_tmp, y_tmp, x_tmp, theta_sr_tmp, beta_mean_tmp, N_m, n_I, S_0, sigma2_tmp);
+          sample_beta_tilde(beta_nc_tmp, y_tmp, x_tmp, theta_sr_tmp, beta_mean_tmp, N_m, n_I, sigma2_tmp);
 
           betaf_nc_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = beta_nc_tmp.rows(1, N_m).cols(0, n_I-1);
           if(!ind){
@@ -406,7 +489,7 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
               betaf_nc_chol_samp.slice(m-1).rows(n_1-1, n_T-1).cols(index, index+k-1) = beta_nc_tmp.cols(n_I, d_tmp-1).rows(1, N_m);
             }
           }
-          SIGMAf_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+          //SIGMAf_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
         } catch (...){
           beta_nc_tmp.fill(nanl(""));
           if (succesful == true){
@@ -442,7 +525,7 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         //Rcout << "Hello 4" << "\n";
         // resample alpha
         try {
-           resample_alpha_diff(alpha_tmp, betaenter, theta_sr_tmp, beta_mean_tmp, beta_diff, xi2_tmp, tau2_tmp, d_tmp, N_m);
+           resample_alpha_diff(betaenter, theta_sr_tmp, beta_mean_tmp, beta_diff, xi2_tmp, tau2_tmp, d_tmp, N_m);
         } catch(...) {
            alpha_tmp.fill(nanl(""));
            if (succesful == true){
@@ -451,25 +534,25 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
               succesful = false;
            }
         }
-
+        //Rcout << "Hello 4" << "\n";
         betaf_nc_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = beta_nc_tmp.rows(1, N_m).cols(0, n_I-1);
 
-        betaf_mean_samp.slice(m-1).col(k) = alpha_tmp(arma::span(0, n_I-1));
+        betaf_mean_samp.slice(m-1).col(k) = beta_mean_tmp(arma::span(0, n_I-1));
 
-        thetaf_sr_samp.slice(m-1).col(k) = alpha_tmp(arma::span(d_tmp, d_tmp+n_I-1));
+        thetaf_sr_samp.slice(m-1).col(k) = theta_sr_tmp(arma::span(0, n_I-1));
 
         betaf_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = betaenter.rows(1, N_m).cols(0, n_I-1);
-
+        //Rcout << "Hello 4" << "\n";
         if(!ind){
           if(k == 1){
             betaf_nc_chol_samp.slice(m-1).rows(n_1-1, n_T-1).col(0) = beta_nc_tmp.col(n_I).rows(1, N_m);
-            betaf_mean_chol_samp(0, m-1) = alpha_tmp(n_I);
-            thetaf_sr_chol_samp(0, m-1) = alpha_tmp(2*d_tmp-1);
+            betaf_mean_chol_samp(0, m-1) = beta_mean_tmp(n_I);
+            thetaf_sr_chol_samp(0, m-1) = theta_sr_tmp(n_I);
           }else if(k > 1){
             index = arma::sum(arma::linspace(1, k-1, k-1));
             betaf_chol_samp.slice(m-1).rows(n_1-1, n_T-1).cols(index, index+k-1) = beta_nc_tmp.cols(n_I, d_tmp-1).rows(1, N_m);
-            betaf_mean_chol_samp.col(m-1).rows(index, index+k-1) = alpha_tmp(arma::span(n_I, d_tmp-1));
-            thetaf_sr_chol_samp.col(m-1).rows(index, index+k-1) = alpha_tmp(arma::span(d_tmp+n_I, 2*d_tmp-1));
+            betaf_mean_chol_samp.col(m-1).rows(index, index+k-1) = beta_mean_tmp(arma::span(n_I, d_tmp-1));
+            thetaf_sr_chol_samp.col(m-1).rows(index, index+k-1) = theta_sr_tmp(arma::span(n_I, d_tmp-1));
           }
         }
         //Rcout << "Hello 5" << "\n";
@@ -514,12 +597,56 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
             succesful = false;
           }
         }
+        //Rcout << "Hello 7" << "\n";
+        // Update forward sigma2
+        try{
+          if(sv){
+            datastand = 2 * arma::log(arma::abs(y_tmp - x_tmp * beta_mean_tmp - x_tilde*theta_sr_tmp));
 
-        // update forward prediction error
+            stochvol::update_fast_sv(datastand, sv_mu_tmp, sv_phi_tmp, sv_sigma_tmp,
+                                     sv_h0_tmp, sv_h_tmp, r, prior_spec, expert);
+
+            // Transform back into sample object
+            sigma2_tmp = arma::exp(sv_h_tmp);
+            SIGMAf_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+            sv_muf_samp(k, m-1) = sv_mu_tmp;
+            sv_phif_samp(k, m-1) = sv_phi_tmp;
+            sv_sigmaf_samp(k, m-1) = sv_sigma_tmp;
+            sv_h0f_samp(k, m-1) = sv_h0_tmp;
+          }else{
+            shrinkTVP::sample_sigma2(sigma2_tmp, y_tmp, x_tmp, beta_nc_tmp.t(), beta_mean_tmp, theta_sr_tmp,
+                                     c0, C0_tmp);
+            SIGMAf_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+          }
+        } catch(...){
+          sigma2_tmp.fill(nanl(""));
+          if (succesful == true){
+            fail = "sample forward sigma2";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+        //Rcout << "Hello 8" << "\n";
+        // Update forward C0
+        if(sv == false){
+          try{
+            C0_tmp = shrinkTVP::sample_C0(sigma2_tmp, g0, c0, G0);
+            C0f_samp(k, m-1) = C0_tmp;
+          }catch(...) {
+            C0_tmp = nanl("");
+            if (succesful == true){
+              fail = "sample forward C0";
+              fail_iter = j + 1;
+              succesful = false;
+            }
+          }
+        }
+        //Rcout << "Hello 9" << "\n";
+        // Update forward prediction error
         update_prediction_error(y_tmp, x_tmp, beta_nc_tmp, theta_sr_tmp, beta_mean_tmp, N_m);
         yf.slice(m).col(k).rows(n_1-1, n_T-1) = y_tmp;
 
-        //Rcout << "Hello 7" << "\n";
+        //Rcout << "Hello 10" << "\n";
         // Backward
         // --------------------------------
         n_1 = 1;          // backward index
@@ -544,6 +671,17 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         tau2_tmp = tau2b_samp.slice(m-1).col(k);
         xi2_tmp = xi2b_samp.slice(m-1).col(k);
         sigma2_tmp = SIGMAb_samp.slice(m-1).col(k).rows(n_1-1, n_T-1);
+
+        if(sv){
+          sv_mu_tmp = sv_mub_samp(k, m-1);
+          sv_phi_tmp = sv_phib_samp(k, m-1);
+          sv_sigma_tmp = sv_sigmab_samp(k, m-1);
+          sv_h_tmp = arma::log(sigma2_tmp);
+          sv_h0_tmp = sv_h0b_samp(k, m-1);
+        }else{
+          C0_tmp = C0b_samp(k, m-1);
+        }
+
 
         if(!ind){
           alpha_tmp = arma::vec(2*d_tmp, arma::fill::zeros);
@@ -573,10 +711,10 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
             xi2_tmp = arma::join_cols(xi2_tmp, xi2b_chol_samp.col(m-1).rows(index, index+k-1));
           }
         }
-
+        //Rcout << "Hello 11" << "\n";
         // sample beta_nc
         try {
-          sample_beta_tilde(beta_nc_tmp, y_tmp, x_tmp, theta_sr_tmp, beta_mean_tmp, N_m, n_I, S_0, sigma2_tmp);
+          sample_beta_tilde(beta_nc_tmp, y_tmp, x_tmp, theta_sr_tmp, beta_mean_tmp, N_m, n_I, sigma2_tmp);
           betab_nc_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = beta_nc_tmp.rows(1, N_m).cols(0, n_I-1);
           if(!ind){
             if(k == 1){
@@ -586,7 +724,7 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
               betab_nc_chol_samp.slice(m-1).rows(n_1-1, n_T-1).cols(index, index+k-1) = beta_nc_tmp.cols(n_I, d_tmp-1).rows(1, N_m);
             }
           }
-          SIGMAb_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+          //SIGMAb_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
         } catch (...){
           beta_nc_tmp.fill(nanl(""));
           if (succesful == true){
@@ -618,10 +756,10 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         // Difference beta outside of function (for numerical stability)
         beta_diff_pre = arma::diff(beta_nc_tmp, 1, 0);
         beta_diff =  beta_diff_pre.each_row() % arma::trans(theta_sr_tmp);
-
+        //Rcout << "Hello 12" << "\n";
         // resample alpha
         try {
-          resample_alpha_diff(alpha_tmp, betaenter, theta_sr_tmp, beta_mean_tmp, beta_diff, xi2_tmp, tau2_tmp, d_tmp, N_m);
+          resample_alpha_diff(betaenter, theta_sr_tmp, beta_mean_tmp, beta_diff, xi2_tmp, tau2_tmp, d_tmp, N_m);
         } catch(...) {
           alpha_tmp.fill(nanl(""));
           if (succesful == true){
@@ -632,20 +770,20 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         }
 
         betab_nc_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = beta_nc_tmp.rows(1, N_m).cols(0, n_I-1);
-        betab_mean_samp.slice(m-1).col(k) = alpha_tmp(arma::span(0, n_I-1));
-        thetab_sr_samp.slice(m-1).col(k) = alpha_tmp(arma::span(d_tmp, d_tmp + n_I-1));
+        betab_mean_samp.slice(m-1).col(k) = beta_mean_tmp(arma::span(0, n_I-1));
+        thetab_sr_samp.slice(m-1).col(k) = theta_sr_tmp(arma::span(0, n_I-1));
         betab_samp.slice(m-1).rows(n_1-1, n_T-1).cols(k*n_I, (k+1)*n_I-1) = betaenter.rows(1, N_m).cols(0, n_I-1);
 
         if(!ind){
           if(k == 1){
             betab_nc_chol_samp.slice(m-1).rows(n_1-1, n_T-1).col(0) = beta_nc_tmp.col(n_I).rows(1, N_m);
-            betab_mean_chol_samp(0, m-1) = alpha_tmp(n_I);
-            thetab_sr_chol_samp(0, m-1) = alpha_tmp(2*d_tmp-1);
+            betab_mean_chol_samp(0, m-1) = beta_mean_tmp(n_I);
+            thetab_sr_chol_samp(0, m-1) = theta_sr_tmp(n_I);
           }else if(k > 1){
             index = arma::sum(arma::linspace(1, k-1, k-1));
             betab_chol_samp.slice(m-1).rows(n_1-1, n_T-1).cols(index, index+k-1) = beta_nc_tmp.cols(n_I, d_tmp-1).rows(1, N_m);
-            betab_mean_chol_samp.col(m-1).rows(index, index+k-1) = alpha_tmp(arma::span(n_I, d_tmp-1));
-            thetab_sr_chol_samp.col(m-1).rows(index, index+k-1) = alpha_tmp(arma::span(d_tmp+n_I, 2*d_tmp-1));
+            betab_mean_chol_samp.col(m-1).rows(index, index+k-1) = beta_mean_tmp(arma::span(n_I, d_tmp-1));
+            thetab_sr_chol_samp.col(m-1).rows(index, index+k-1) = theta_sr_tmp(arma::span(n_I, d_tmp-1));
           }
         }
 
@@ -690,7 +828,52 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
             succesful = false;
           }
         }
+        //Rcout << "Hello 13" << "\n";
+        // Update backward sigma2
+        try{
+          if(sv){
+            datastand = 2 * arma::log(arma::abs(y_tmp - x_tmp * beta_mean_tmp - x_tilde*theta_sr_tmp));
 
+            stochvol::update_fast_sv(datastand, sv_mu_tmp, sv_phi_tmp, sv_sigma_tmp,
+                                     sv_h0_tmp, sv_h_tmp, r, prior_spec, expert);
+
+            // Transform back into sample object
+            sigma2_tmp = arma::exp(sv_h_tmp);
+            SIGMAb_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+            sv_mub_samp(k, m-1) = sv_mu_tmp;
+            sv_phib_samp(k, m-1) = sv_phi_tmp;
+            sv_sigmab_samp(k, m-1) = sv_sigma_tmp;
+            sv_h0b_samp(k, m-1) = sv_h0_tmp;
+          }else{
+            shrinkTVP::sample_sigma2(sigma2_tmp, y_tmp, x_tmp, beta_nc_tmp.t(), beta_mean_tmp, theta_sr_tmp,
+                                     c0, C0_tmp);
+            SIGMAb_samp.slice(m-1).col(k).rows(n_1-1, n_T-1) = sigma2_tmp;
+          }
+        } catch(...){
+          sigma2_tmp.fill(nanl(""));
+          if (succesful == true){
+            fail = "sample backward sigma2";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+
+        // Update backward C0
+        if(sv == false){
+          try{
+            C0_tmp = shrinkTVP::sample_C0(sigma2_tmp, g0, c0, G0);
+            C0b_samp(k, m-1) = C0_tmp;
+          }catch(...) {
+            C0_tmp = nanl("");
+            if (succesful == true){
+              fail = "sample backward C0";
+              fail_iter = j + 1;
+              succesful = false;
+            }
+          }
+        }
+
+        //Rcout << "Hello 15" << "\n";
         // update backward prediction error
         update_prediction_error(y_tmp, x_tmp, beta_nc_tmp, theta_sr_tmp, beta_mean_tmp, N_m);
         yb.slice(m).col(k).rows(n_1-1, n_T-1) = y_tmp;
@@ -712,6 +895,7 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
           yb.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular)*arma::trans(yb.slice(m).row(i)));
         }
       }
+
     }
 
 
@@ -931,10 +1115,6 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
 
     // adjust start of storage point depending on store_burn
     int nburn_new = nburn;
-    if(store_burn){
-      nburn_new = 0;
-    }
-
 
     // Increment index i if burn-in period is over
     if (j > nburn_new){
@@ -955,6 +1135,17 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
 
       SIGMAf_save((post_j-1)/nthin) = SIGMAf_samp;
       SIGMAb_save((post_j-1)/nthin) = SIGMAb_samp;
+      if(sv){
+        sv_muf_save((post_j-1)/nthin) = sv_muf_samp;
+        sv_mub_save((post_j-1)/nthin) = sv_mub_samp;
+        sv_phif_save((post_j-1)/nthin) = sv_phif_samp;
+        sv_phib_save((post_j-1)/nthin) = sv_phib_samp;
+        sv_sigmaf_save((post_j-1)/nthin) = sv_sigmaf_samp;
+        sv_sigmab_save((post_j-1)/nthin) = sv_sigmab_samp;
+      }else{
+        C0f_save((post_j-1)/nthin) = C0f_samp;
+        C0b_save((post_j-1)/nthin) = C0b_samp;
+      }
 
       //arma::cout << "size of thetaf_sr_save: " << arma::size(thetaf_sr_save) << arma::endl;
       //arma::cout << "size of thetab_sr_save: " << arma::size(thetab_sr_save) << arma::endl;
@@ -1076,6 +1267,10 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
 
   // return everything as a nested list (due to size restrictions on Rcpp::Lists)
   return List::create(_["SIGMA"] = List::create(_["f"] = SIGMAf_save, _["b"] = SIGMAb_save),
+                      _["C0"] = List::create(_["f"] = C0f_save, _["b"] = C0b_save),
+                      _["sv_mu"] = List::create(_["f"] = sv_muf_save, _["b"] = sv_mub_save),
+                      _["sv_phi"] = List::create(_["f"] = sv_phif_save, _["b"] = sv_phib_save),
+                      _["sv_sigma"] = List::create(_["f"] = sv_sigmaf_save, _["b"] = sv_sigmab_save),
                       _["theta_sr"] = List::create(_["f"] = thetaf_sr_save, _["b"] = thetab_sr_save),
                       _["beta_mean"] = List::create(_["f"] = betaf_mean_save, _["b"] = betab_mean_save),
                       _["beta_nc"] = List::create(_["f"] = betaf_nc_save, _["b"] = betab_nc_save),
