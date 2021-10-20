@@ -7,6 +7,8 @@
 #include "DG_vi_update_functions.h"
 #include "common_update_functions.h"
 #include "sample_parameters.h"
+#include "DG_approx.h"
+#include "utilities_cpp.h"
 using namespace Rcpp;
 
 // [[Rcpp::export]]
@@ -25,7 +27,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
                   bool ind,
                   double S_0,
                   double epsilon,
-                  bool skip) {
+                  bool skip,
+                  int sample_size,
+                  double b_xi,
+                  double b_tau) {
 
   // Progress bar setup
   arma::vec prog_rep_points = arma::round(arma::linspace(0, iter_max, 50));
@@ -59,6 +64,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::vec y_tmp;
   arma::mat x_tmp;
   int d_tmp;
+  int counts;
+  arma::vec diff((d-start+1)*12 + 16, arma::fill::zeros);
 
   // generate forward and backward PARCOR
   arma::cube betaf_nc_old(N, n_I2, d, arma::fill::none);
@@ -119,6 +126,12 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::cube xi2f_inv_new(n_I, n_I, d, arma::fill::ones);
   arma::cube xi2b_inv_new(n_I, n_I, d, arma::fill::ones);
 
+  arma::cube xi2f_log_old(n_I, n_I, d, arma::fill::ones);
+  arma::cube xi2b_log_old(n_I, n_I, d, arma::fill::ones);
+
+  arma::cube xi2f_log_new(n_I, n_I, d, arma::fill::ones);
+  arma::cube xi2b_log_new(n_I, n_I, d, arma::fill::ones);
+
   arma::cube tau2f_old(n_I, n_I, d, arma::fill::ones);
   arma::cube tau2b_old(n_I, n_I, d, arma::fill::ones);
 
@@ -131,15 +144,31 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::cube tau2f_inv_new(n_I, n_I, d, arma::fill::ones);
   arma::cube tau2b_inv_new(n_I, n_I, d, arma::fill::ones);
 
+  arma::cube tau2f_log_old(n_I, n_I, d, arma::fill::ones);
+  arma::cube tau2b_log_old(n_I, n_I, d, arma::fill::ones);
+
+  arma::cube tau2f_log_new(n_I, n_I, d, arma::fill::ones);
+  arma::cube tau2b_log_new(n_I, n_I, d, arma::fill::ones);
+
   arma::vec kappa2f_old(n_I, arma::fill::ones);
   arma::vec kappa2b_old(n_I, arma::fill::ones);
   arma::vec lambda2f_old(n_I, arma::fill::ones);
   arma::vec lambda2b_old(n_I, arma::fill::ones);
 
+  arma::vec kappa2f_log_old(n_I, arma::fill::ones);
+  arma::vec kappa2b_log_old(n_I, arma::fill::ones);
+  arma::vec lambda2f_log_old(n_I, arma::fill::ones);
+  arma::vec lambda2b_log_old(n_I, arma::fill::ones);
+
   arma::vec kappa2f_new(n_I, arma::fill::ones);
   arma::vec kappa2b_new(n_I, arma::fill::ones);
   arma::vec lambda2f_new(n_I, arma::fill::ones);
   arma::vec lambda2b_new(n_I, arma::fill::ones);
+
+  arma::vec kappa2f_log_new(n_I, arma::fill::ones);
+  arma::vec kappa2b_log_new(n_I, arma::fill::ones);
+  arma::vec lambda2f_log_new(n_I, arma::fill::ones);
+  arma::vec lambda2b_log_new(n_I, arma::fill::ones);
 
   arma::vec a_xif_new(n_I);
   arma::vec a_tauf_new(n_I);
@@ -166,8 +195,14 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
   arma::vec tau2_tmp;
   arma::vec tau2_inv_tmp;
+  arma::vec tau2_log_tmp;
   arma::vec xi2_tmp;
   arma::vec xi2_inv_tmp;
+  arma::vec xi2_log_tmp;
+  double kappa2_tmp;
+  double kappa2_log_tmp;
+  double lambda2_tmp;
+  double lambda2_log_tmp;
 
   arma::vec sigma2_tmp;
   arma::vec sigma2_inv_tmp;
@@ -244,19 +279,17 @@ List vi_shrinkTVP(arma::mat y_fwd,
   tau2b_old.fill(1.0);
 
 
+  a_xif_new.fill(a_xi);
+  a_xib_new.fill(a_xi);
+  a_xif_old.fill(a_xi);
+  a_xib_old.fill(a_xi);
 
-  if (!learn_a_xi){
-    a_xif_new.fill(a_xi);
-    a_xib_new.fill(a_xi);
-    a_xif_old.fill(a_xi);
-    a_xib_old.fill(a_xi);
-  }
-  if (!learn_a_tau){
-    a_tauf_new.fill(a_tau);
-    a_taub_new.fill(a_tau);
-    a_tauf_old.fill(a_tau);
-    a_taub_old.fill(a_tau);
-  }
+
+  a_tauf_new.fill(a_tau);
+  a_taub_new.fill(a_tau);
+  a_tauf_old.fill(a_tau);
+  a_taub_old.fill(a_tau);
+
   // definition of beta_tilde cholesky
   arma::cube betaf_nc_chol_old;
   arma::cube betab_nc_chol_old;
@@ -295,6 +328,12 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::mat xi2f_inv_chol_new;
   arma::mat xi2b_inv_chol_new;
 
+  arma::mat xi2f_log_chol_old;
+  arma::mat xi2b_log_chol_old;
+
+  arma::mat xi2f_log_chol_new;
+  arma::mat xi2b_log_chol_new;
+
   // definition of tau2 cholesky
   arma::mat tau2f_chol_old;
   arma::mat tau2b_chol_old;
@@ -307,6 +346,13 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
   arma::mat tau2f_inv_chol_new;
   arma::mat tau2b_inv_chol_new;
+
+
+  arma::mat tau2f_log_chol_old;
+  arma::mat tau2b_log_chol_old;
+
+  arma::mat tau2f_log_chol_new;
+  arma::mat tau2b_log_chol_new;
 
   // definition temp upper triangular
   arma::mat tmp_upper_triangular;
@@ -360,6 +406,12 @@ List vi_shrinkTVP(arma::mat y_fwd,
     xi2f_inv_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
     xi2b_inv_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
 
+    xi2f_log_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+    xi2b_log_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+
+    xi2f_log_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+    xi2b_log_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+
     // definition of tau2 cholesky
     tau2f_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
     tau2b_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
@@ -372,6 +424,12 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
     tau2f_inv_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
     tau2b_inv_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+
+    tau2f_log_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+    tau2b_log_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+
+    tau2f_log_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
+    tau2b_log_chol_new = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
   }
 
   // Values to check if the sampler failed or not
@@ -381,10 +439,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
   int j = 0;
 
   // Introduce difference
-  double diff = 100.0;
+
+  bool flag = false;
   // Begin Gibbs loop
-  while( !( diff < epsilon ) && (j < iter_max)){
-    diff = 0.0;
+  while( !flag && (j < iter_max)){
     for(int m = start; m < d+1; m++){
       for(int k = 0; k < n_I; k++){
         // Forward
@@ -420,7 +478,11 @@ List vi_shrinkTVP(arma::mat y_fwd,
         xi2_tmp = arma::vec(d_tmp, arma::fill::zeros);
 
         tau2_inv_tmp = tau2f_inv_old.slice(m-1).col(k);
+        tau2_log_tmp = tau2f_log_old.slice(m-1).col(k);
+
         xi2_inv_tmp = xi2f_inv_old.slice(m-1).col(k);
+        xi2_log_tmp = xi2f_log_old.slice(m-1).col(k);
+
         sigma2_tmp = sigma2f_old.slice(m-1).col(k).rows(n_1-1, n_T-1);
 
         if(!ind){
@@ -429,6 +491,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
             beta_mean_tmp = arma::vec(d_tmp, arma::fill::zeros);
             tau2_inv_tmp = arma::vec(d_tmp, arma::fill::zeros);
             xi2_inv_tmp = arma::vec(d_tmp, arma::fill::zeros);
+            tau2_log_tmp = arma::vec(d_tmp, arma::fill::zeros);
+            xi2_log_tmp = arma::vec(d_tmp, arma::fill::zeros);
 
             theta_sr_tmp(arma::span(0, d_tmp-2)) = thetaf_sr_old.slice(m-1).col(k);
             theta_sr_tmp(d_tmp-1) = thetaf_sr_chol_old(0, m-1);
@@ -441,12 +505,21 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
             xi2_inv_tmp(arma::span(0, d_tmp-2)) = xi2f_inv_old.slice(m-1).col(k);
             xi2_inv_tmp(d_tmp-1) = xi2f_inv_chol_old(0, m-1);
+
+            tau2_log_tmp(arma::span(0, d_tmp-2)) = tau2f_log_old.slice(m-1).col(k);
+            tau2_log_tmp(d_tmp-1) = tau2f_log_chol_old(0, m-1);
+
+            xi2_log_tmp(arma::span(0, d_tmp-2)) = xi2f_log_old.slice(m-1).col(k);
+            xi2_log_tmp(d_tmp-1) = xi2f_log_chol_old(0, m-1);
           }else if(k > 1){
             index = arma::sum(arma::linspace(1, k-1, k-1));
             theta_sr_tmp = arma::join_cols(theta_sr_tmp, thetaf_sr_chol_old.col(m-1).rows(index, index+k-1));
             beta_mean_tmp = arma::join_cols(beta_mean_tmp, betaf_mean_chol_old.col(m-1).rows(index, index+k-1));
             tau2_inv_tmp = arma::join_cols(tau2_inv_tmp, tau2f_inv_chol_old.col(m-1).rows(index, index+k-1));
             xi2_inv_tmp = arma::join_cols(xi2_inv_tmp, xi2f_inv_chol_old.col(m-1).rows(index, index+k-1));
+
+            tau2_log_tmp = arma::join_cols(tau2_log_tmp, tau2f_log_chol_old.col(m-1).rows(index, index+k-1));
+            xi2_log_tmp = arma::join_cols(xi2_log_tmp, xi2f_log_chol_old.col(m-1).rows(index, index+k-1));
           }
         }
 
@@ -491,6 +564,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
           }
 
         } catch(...){
+          Rcout << "beta_mean problem " << "\n";
           //beta_mean_tmp.fill(nanl(""));
           //beta2_mean_tmp.fill(nanl(""));
           if (succesful == true){
@@ -518,6 +592,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
         } catch(...){
           //theta_sr_tmp.fill(nanl(""));
           //theta_tmp.fill(nanl(""));
+          Rcout << "theta_sr problem " << "\n";
           if(succesful == true){
             fail = "update forward theta sr & theta";
             fail_iter = j + 1;
@@ -528,24 +603,28 @@ List vi_shrinkTVP(arma::mat y_fwd,
         // update forward tau2
         //Rcout << "forward tau2" << "\n";
         try {
-          update_local_shrink(tau2_tmp, tau2_inv_tmp, beta2_mean_tmp, lambda2f_old(k), a_tauf_old(k));
+          update_local_shrink(tau2_tmp, tau2_inv_tmp, tau2_log_tmp,
+                              beta2_mean_tmp, lambda2f_old(k), a_tauf_old(k));
           tau2f_new.slice(m-1).col(k) = tau2_tmp(arma::span(0, n_I-1));
           tau2f_inv_new.slice(m-1).col(k) = tau2_inv_tmp(arma::span(0, n_I-1));
+          tau2f_log_new.slice(m-1).col(k) = tau2_log_tmp(arma::span(0, n_I-1));
           if(!ind){
             if(k == 1){
               tau2f_chol_new(0, m-1) = arma::as_scalar(tau2_tmp(n_I));
               tau2f_inv_chol_new(0, m-1) = arma::as_scalar(tau2_inv_tmp(n_I));
+              tau2f_log_chol_new(0, m-1) = arma::as_scalar(tau2_log_tmp(n_I));
             }else if(k > 1){
               index = arma::sum(arma::linspace(1, k-1, k-1));
               tau2f_chol_new.col(m-1).rows(index, index+k-1) = tau2_tmp(arma::span(n_I, d_tmp-1));
               tau2f_inv_chol_new.col(m-1).rows(index, index+k-1) = tau2_inv_tmp(arma::span(n_I, d_tmp-1));
+              tau2f_log_chol_new.col(m-1).rows(index, index+k-1) = tau2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
         } catch(...) {
           //tau2_tmp.fill(nanl(""));
           //tau2_inv_tmp.fill(nanl(""));
           if (succesful == true){
-            fail = "update forward tau2 & tau2_inv";
+            fail = "update forward tau2, tau2_inv & tau2_log";
             fail_iter = j + 1;
             succesful = false;
           }
@@ -554,23 +633,27 @@ List vi_shrinkTVP(arma::mat y_fwd,
         // update forward xi2
         //Rcout << "forward xi" << "\n";
         try {
-          update_local_shrink(xi2_tmp, xi2_inv_tmp, theta_tmp, kappa2f_old(k), a_xif_old(k));
+          update_local_shrink(xi2_tmp, xi2_inv_tmp, xi2_log_tmp,
+                              theta_tmp, kappa2f_old(k), a_xif_old(k));
           xi2f_new.slice(m-1).col(k) = xi2_tmp(arma::span(0, n_I-1));
           xi2f_inv_new.slice(m-1).col(k) = xi2_inv_tmp(arma::span(0, n_I-1));
+          xi2f_log_new.slice(m-1).col(k) = xi2_log_tmp(arma::span(0, n_I-1));
           if(!ind){
             if(k == 1){
               xi2f_chol_new(0, m-1) = arma::as_scalar(xi2_tmp(n_I));
               xi2f_inv_chol_new(0, m-1) = arma::as_scalar(xi2_inv_tmp(n_I));
+              xi2f_log_chol_new(0, m-1) = arma::as_scalar(xi2_log_tmp(n_I));
             }else if(k > 1){
               index = arma::sum(arma::linspace(1, k-1, k-1));
               xi2f_chol_new.col(m-1).rows(index, index+k-1) = xi2_tmp(arma::span(n_I, d_tmp-1));
               xi2f_inv_chol_new.col(m-1).rows(index, index+k-1) = xi2_inv_tmp(arma::span(n_I, d_tmp-1));
+              xi2f_log_chol_new.col(m-1).rows(index, index+k-1) = xi2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
         } catch(...) {
           //xi2_tmp.fill(nanl(""));
           if (succesful == true){
-            fail = "update forward xi2 & xi2_inv";
+            fail = "update forward xi2, xi2_inv & xi2_log";
             fail_iter = j + 1;
             succesful = false;
           }
@@ -613,6 +696,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
         tau2_inv_tmp = tau2b_inv_old.slice(m-1).col(k);
         xi2_inv_tmp = xi2b_inv_old.slice(m-1).col(k);
+
+        tau2_log_tmp = tau2b_log_old.slice(m-1).col(k);
+        xi2_log_tmp = xi2b_log_old.slice(m-1).col(k);
+
         sigma2_tmp = sigma2b_old.slice(m-1).col(k).rows(n_1-1, n_T-1);
 
         if(!ind){
@@ -621,6 +708,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
             beta_mean_tmp = arma::vec(d_tmp, arma::fill::zeros);
             tau2_inv_tmp = arma::vec(d_tmp, arma::fill::zeros);
             xi2_inv_tmp = arma::vec(d_tmp, arma::fill::zeros);
+            tau2_log_tmp = arma::vec(d_tmp, arma::fill::zeros);
+            xi2_log_tmp = arma::vec(d_tmp, arma::fill::zeros);
 
             theta_sr_tmp(arma::span(0, d_tmp-2)) = thetab_sr_old.slice(m-1).col(k);
             theta_sr_tmp(d_tmp-1) = thetab_sr_chol_old(0, m-1);
@@ -631,14 +720,22 @@ List vi_shrinkTVP(arma::mat y_fwd,
             tau2_inv_tmp(arma::span(0, d_tmp-2)) = tau2b_inv_old.slice(m-1).col(k);
             tau2_inv_tmp(d_tmp-1) = tau2b_inv_chol_old(0, m-1);
 
+            tau2_log_tmp(arma::span(0, d_tmp-2)) = tau2b_log_old.slice(m-1).col(k);
+            tau2_log_tmp(d_tmp-1) = tau2b_log_chol_old(0, m-1);
+
             xi2_inv_tmp(arma::span(0, d_tmp-2)) = xi2b_inv_old.slice(m-1).col(k);
             xi2_inv_tmp(d_tmp-1) = xi2b_inv_chol_old(0, m-1);
+
+            xi2_log_tmp(arma::span(0, d_tmp-2)) = xi2b_log_old.slice(m-1).col(k);
+            xi2_log_tmp(d_tmp-1) = xi2b_log_chol_old(0, m-1);
           }else if(k > 1){
             index = arma::sum(arma::linspace(1, k-1, k-1));
             theta_sr_tmp = arma::join_cols(theta_sr_tmp, thetab_sr_chol_old.col(m-1).rows(index, index+k-1));
             beta_mean_tmp = arma::join_cols(beta_mean_tmp, betab_mean_chol_old.col(m-1).rows(index, index+k-1));
             tau2_inv_tmp = arma::join_cols(tau2_inv_tmp, tau2b_inv_chol_old.col(m-1).rows(index, index+k-1));
             xi2_inv_tmp = arma::join_cols(xi2_inv_tmp, xi2b_inv_chol_old.col(m-1).rows(index, index+k-1));
+            tau2_log_tmp = arma::join_cols(tau2_log_tmp, tau2b_log_chol_old.col(m-1).rows(index, index+k-1));
+            xi2_log_tmp = arma::join_cols(xi2_log_tmp, xi2b_log_chol_old.col(m-1).rows(index, index+k-1));
           }
         }
 
@@ -715,24 +812,27 @@ List vi_shrinkTVP(arma::mat y_fwd,
         // update backward tau2
         //Rcout << "backward tau2" << "\n";
         try {
-          update_local_shrink(tau2_tmp, tau2_inv_tmp, beta2_mean_tmp, lambda2b_old(k), a_taub_old(k));
+          update_local_shrink(tau2_tmp, tau2_inv_tmp, tau2_log_tmp, beta2_mean_tmp, lambda2b_old(k), a_taub_old(k));
           tau2b_new.slice(m-1).col(k) = tau2_tmp(arma::span(0, n_I-1));
           tau2b_inv_new.slice(m-1).col(k) = tau2_inv_tmp(arma::span(0, n_I-1));
+          tau2b_log_new.slice(m-1).col(k) = tau2_log_tmp(arma::span(0, n_I-1));
           if(!ind){
             if(k == 1){
               tau2b_chol_new(0, m-1) = arma::as_scalar(tau2_tmp(n_I));
               tau2b_inv_chol_new(0, m-1) = arma::as_scalar(tau2_inv_tmp(n_I));
+              tau2b_log_chol_new(0, m-1) = arma::as_scalar(tau2_log_tmp(n_I));
             }else if(k > 1){
               index = arma::sum(arma::linspace(1, k-1, k-1));
               tau2b_chol_new.col(m-1).rows(index, index+k-1) = tau2_tmp(arma::span(n_I, d_tmp-1));
               tau2b_inv_chol_new.col(m-1).rows(index, index+k-1) = tau2_inv_tmp(arma::span(n_I, d_tmp-1));
+              tau2b_log_chol_new.col(m-1).rows(index, index+k-1) = tau2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
         } catch(...) {
           //tau2_tmp.fill(nanl(""));
           //tau2_inv_tmp.fill(nanl(""));
           if (succesful == true){
-            fail = "update backward tau2 & tau2_inv";
+            fail = "update backward tau2, tau2_inv & tau2_log";
             fail_iter = j + 1;
             succesful = false;
           }
@@ -741,23 +841,27 @@ List vi_shrinkTVP(arma::mat y_fwd,
         // update backward xi2
         //Rcout << "backward xi" << "\n";
         try {
-          update_local_shrink(xi2_tmp, xi2_inv_tmp, theta_tmp, kappa2b_old(k), a_xib_old(k));
+          update_local_shrink(xi2_tmp, xi2_inv_tmp, xi2_log_tmp,
+                              theta_tmp, kappa2b_old(k), a_xib_old(k));
           xi2b_new.slice(m-1).col(k) = xi2_tmp(arma::span(0, n_I-1));
           xi2b_inv_new.slice(m-1).col(k) = xi2_inv_tmp(arma::span(0, n_I-1));
+          xi2b_log_new.slice(m-1).col(k) = xi2_log_tmp(arma::span(0, n_I-1));
           if(!ind){
             if(k == 1){
               xi2b_chol_new(0, m-1) = arma::as_scalar(xi2_tmp(n_I));
               xi2b_inv_chol_new(0, m-1) = arma::as_scalar(xi2_inv_tmp(n_I));
+              xi2b_log_chol_new(0, m-1) = arma::as_scalar(xi2_log_tmp(n_I));
             }else if(k > 1){
               index = arma::sum(arma::linspace(1, k-1, k-1));
               xi2b_chol_new.col(m-1).rows(index, index+k-1) = xi2_tmp(arma::span(n_I, d_tmp-1));
               xi2b_inv_chol_new.col(m-1).rows(index, index+k-1) = xi2_inv_tmp(arma::span(n_I, d_tmp-1));
+              xi2b_log_chol_new.col(m-1).rows(index, index+k-1) = xi2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
         } catch(...) {
           //xi2_tmp.fill(nanl(""));
           if (succesful == true){
-            fail = "update backward xi2 & xi2_inv";
+            fail = "update backward xi2, xi2_inv & xi2_log";
             fail_iter = j + 1;
             succesful = false;
           }
@@ -796,6 +900,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
     //std::for_each(yb.begin(), yb.end(), res_protector);
 
     // update forward kappa2 and lambda2
+    //Rcout << "forward kappa2" << "\n";
     for(int k = 0; k < n_I; k++){
       try {
         xi2_tmp = arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
@@ -807,16 +912,19 @@ List vi_shrinkTVP(arma::mat y_fwd,
             xi2_tmp = arma::join_cols(arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2f_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
           }
         }
-        kappa2f_new(k) = update_global_shrink(xi2_tmp, a_xif_new(k), d1, d2);
+        update_global_shrink(xi2_tmp, kappa2_tmp, kappa2_log_tmp, a_xif_old(k), d1, d2);
+        kappa2f_new(k) = kappa2_tmp;
+        kappa2f_log_new(k) = kappa2_log_tmp;
       } catch (...) {
         //kappa2f_new(k) = arma::datum::nan;
         if (succesful == true){
-          fail = "update forward kappa2";
+          fail = "update forward kappa2 & kappa2_log";
           fail_iter = j + 1;
           succesful = false;
         }
       }
     }
+    //Rcout << "forward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
       try {
         tau2_tmp = arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
@@ -828,11 +936,13 @@ List vi_shrinkTVP(arma::mat y_fwd,
             tau2_tmp = arma::join_cols(arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2f_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
           }
         }
-        lambda2f_new(k) = update_global_shrink(tau2_tmp, a_tauf_new(k), e1, e2);
+        update_global_shrink(tau2_tmp,lambda2_tmp, lambda2_log_tmp, a_tauf_old(k), e1, e2);
+        lambda2f_new(k) = lambda2_tmp;
+        lambda2f_log_new(k) = lambda2_log_tmp;
       } catch (...) {
         //lambda2f_new(k) = arma::datum::nan;
         if (succesful == true){
-          fail = "update forward lambda2";
+          fail = "update forward lambda2 & lambda2_log";
           fail_iter = j + 1;
           succesful = false;
         }
@@ -840,6 +950,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
     }
 
     // sample backward kappa2 and lambda2
+    //Rcout << "backward kappa2" << "\n";
     for(int k = 0; k < n_I; k++){
       try {
         xi2_tmp = arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
@@ -851,16 +962,19 @@ List vi_shrinkTVP(arma::mat y_fwd,
             xi2_tmp = arma::join_cols(arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2b_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
           }
         }
-        kappa2b_new(k) = update_global_shrink(xi2_tmp, a_xib_new(k), d1, d2);
+        update_global_shrink(xi2_tmp, kappa2_tmp, kappa2_log_tmp, a_xib_old(k), d1, d2);
+        kappa2b_new(k) = kappa2_tmp;
+        kappa2b_log_new(k) = kappa2_log_tmp;
       } catch (...) {
         //kappa2b_new(k) = arma::datum::nan;
         if (succesful == true){
-          fail = "update backward kappa2";
+          fail = "update backward kappa2 & kappa2_log";
           fail_iter = j + 1;
           succesful = false;
         }
       }
     }
+    //Rcout << "backward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
       try {
         tau2_tmp = arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
@@ -872,17 +986,160 @@ List vi_shrinkTVP(arma::mat y_fwd,
             tau2_tmp = arma::join_cols(arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2b_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
           }
         }
-        lambda2b_new(k) = update_global_shrink(tau2_tmp, a_taub_new(k), e1, e2);
+        update_global_shrink(tau2_tmp, lambda2_tmp, lambda2_log_tmp, a_taub_old(k), e1, e2);
+        lambda2b_new(k) = lambda2_tmp;
+        lambda2b_log_new(k) = lambda2_log_tmp;
       } catch (...) {
         //lambda2b_new(k) = arma::datum::nan;
         if (succesful == true){
-          fail = "update backward lambda2";
+          fail = "update backward lambda2 & lambda2_log";
           fail_iter = j + 1;
           succesful = false;
         }
       }
     }
 
+
+    if(learn_a_xi){
+      // Rcout << "forward a_xi" << "\n";
+      for(int k = 0; k < n_I; k++){
+        try{
+          xi2_tmp = arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          xi2_log_tmp = arma::vectorise(xi2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          if(!ind){
+            if(k == 1){
+              xi2_tmp = arma::join_cols(arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2f_chol_new(0, arma::span(start-1, d-1))));
+              xi2_log_tmp = arma::join_cols(arma::vectorise(xi2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2f_log_chol_new(0, arma::span(start-1, d-1))));
+            }else if(k > 1){
+              index = arma::sum(arma::linspace(1, k-1, k-1));
+              xi2_tmp = arma::join_cols(arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2f_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+              xi2_log_tmp = arma::join_cols(arma::vectorise(xi2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2f_log_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+            }
+          }
+          a_xif_new(k) = DG_approx(xi2_tmp, xi2_log_tmp, kappa2f_new(k), kappa2f_log_new(k), b_xi, sample_size);
+          if(!a_xif_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_xif_new: " << a_xif_new(k) << "\n";
+            Rcout << "sum xi2_tmp: " << arma::sum(xi2_tmp) << "\n";
+            Rcout << "sum xi2_log_tmp: " << arma::sum(xi2_log_tmp) << "\n";
+            Rcout << "kappa2f_new(k): " << kappa2f_new(k) << "\n";
+            Rcout << "kappa2f_log_new(k): " << kappa2f_log_new(k) << "\n";
+            stop("a_xib_new has non-finite elements");
+          }
+         }catch (...){
+          if (succesful == true){
+            fail = "update forward a_xi";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+
+      // Rcout << "backward a_xi" << "\n";
+      for(int k = 0; k < n_I; k++){
+        try{
+          xi2_tmp = arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          xi2_log_tmp = arma::vectorise(xi2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          if(!ind){
+            if(k == 1){
+              xi2_tmp = arma::join_cols(arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2b_chol_new(0, arma::span(start-1, d-1))));
+              xi2_log_tmp = arma::join_cols(arma::vectorise(xi2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2b_log_chol_new(0, arma::span(start-1, d-1))));
+            }else if(k > 1){
+              index = arma::sum(arma::linspace(1, k-1, k-1));
+              xi2_tmp = arma::join_cols(arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2b_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+              xi2_log_tmp = arma::join_cols(arma::vectorise(xi2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(xi2b_log_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+            }
+          }
+          a_xib_new(k) = DG_approx(xi2_tmp, xi2_log_tmp, kappa2b_new(k), kappa2b_log_new(k), b_xi, sample_size);
+          if(!a_xib_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_xib_new: " << a_xib_new(k) << "\n";
+            Rcout << "sum xi2_tmp: " << arma::sum(xi2_tmp) << "\n";
+            Rcout << "sum xi2_log_tmp: " << arma::sum(xi2_log_tmp) << "\n";
+            Rcout << "kappa2b_new(k): " << kappa2b_new(k) << "\n";
+            Rcout << "kappa2b_log_new(k): " << kappa2b_log_new(k) << "\n";
+            stop("a_xib_new has non-finite elements");
+          }
+        }catch (...){
+          if (succesful == true){
+            fail = "update backward a_xi";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+    }
+
+    if(learn_a_tau){
+      // Rcout << "forward a_tau" << "\n";
+      for(int k = 0; k < n_I; k++){
+        try{
+          tau2_tmp = arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          tau2_log_tmp = arma::vectorise(tau2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          if(!ind){
+            if(k == 1){
+              tau2_tmp = arma::join_cols(arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2f_chol_new(0, arma::span(start-1, d-1))));
+              tau2_log_tmp = arma::join_cols(arma::vectorise(tau2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2f_log_chol_new(0, arma::span(start-1, d-1))));
+            }else if(k > 1){
+              index = arma::sum(arma::linspace(1, k-1, k-1));
+              tau2_tmp = arma::join_cols(arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2f_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+              tau2_log_tmp = arma::join_cols(arma::vectorise(tau2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2f_log_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+            }
+          }
+          a_tauf_new(k) = DG_approx(tau2_tmp, tau2_log_tmp, lambda2f_new(k), lambda2f_log_new(k), b_tau, sample_size);
+          if(!a_tauf_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_tauf_new: " << a_tauf_new(k) << "\n";
+            Rcout << "sum tau2_tmp: " << arma::sum(tau2_tmp) << "\n";
+            Rcout << "sum tau2_log_tmp: " << arma::sum(tau2_log_tmp) << "\n";
+            Rcout << "lambda2f_new(k): " << lambda2f_new(k) << "\n";
+            Rcout << "lambda2f_log_new(k): " << lambda2f_log_new(k) << "\n";
+            stop("a_tauf_new has non-finite elements");
+          }
+        }catch (...){
+          if (succesful == true){
+            fail = "update forward a_tau";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+      // Rcout << "backward a_tau" << "\n";
+      for(int k = 0; k < n_I; k++){
+        try{
+          tau2_tmp = arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          tau2_log_tmp = arma::vectorise(tau2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
+          if(!ind){
+            if(k == 1){
+              tau2_tmp = arma::join_cols(arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2b_chol_new(0, arma::span(start-1, d-1))));
+              tau2_log_tmp = arma::join_cols(arma::vectorise(tau2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2b_log_chol_new(0, arma::span(start-1, d-1))));
+            }else if(k > 1){
+              index = arma::sum(arma::linspace(1, k-1, k-1));
+              tau2_tmp = arma::join_cols(arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2b_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+              tau2_log_tmp = arma::join_cols(arma::vectorise(tau2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1))), arma::vectorise(tau2b_log_chol_new(arma::span(index, index+k-1), arma::span(start-1, d-1))));
+            }
+          }
+          a_taub_new(k) = DG_approx(tau2_tmp, tau2_log_tmp, lambda2b_new(k), lambda2b_log_new(k), b_tau, sample_size);
+          if(!a_taub_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_taub_new: " << a_taub_new(k) << "\n";
+            Rcout << "backward sum tau2_tmp: " << arma::sum(tau2_tmp) << "\n";
+            Rcout << "backward sum tau2_log_tmp: " << arma::sum(tau2_log_tmp) << "\n";
+            Rcout << "lambda2b_new(k): " << lambda2b_new(k) << "\n";
+            Rcout << "lambda2b_log_new(k): " << lambda2b_log_new(k) << "\n";
+            stop("a_tauf_new has non-finite elements");
+          }
+        }catch (...){
+          if (succesful == true){
+            fail = "update backward a_tau";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+    }
+    flag = true;
+    counts = 0;
     // Updating stop criterion
     for(int m=start-1; m < d; m++){
       if(!betaf_mean_new.slice(m).is_finite()){
@@ -917,55 +1174,137 @@ List vi_shrinkTVP(arma::mat y_fwd,
       if(!betab_nc_new.slice(m).is_finite()){
         Rcout << "betab" << "\n";
       }
-      diff += arma::norm(betaf_mean_new.slice(m) - betaf_mean_old.slice(m), 2);
-      diff += arma::norm(thetaf_sr_new.slice(m) - thetaf_sr_old.slice(m), 2);
-      diff += arma::norm(betab_mean_new.slice(m) - betab_mean_old.slice(m), 2);
-      diff += arma::norm(thetab_sr_new.slice(m) - thetab_sr_old.slice(m), 2);
+      diff(counts) = compute_norm_matrix(betaf_mean_new.slice(m), betaf_mean_old.slice(m));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
 
-      diff += arma::norm(xi2f_new.slice(m) - xi2f_old.slice(m), 2);
-      diff += arma::norm(tau2f_new.slice(m) - tau2f_old.slice(m), 2);
-      diff += arma::norm(xi2b_new.slice(m) - xi2b_old.slice(m), 2);
-      diff += arma::norm(tau2b_new.slice(m) - tau2b_old.slice(m), 2);
+      diff(counts) = compute_norm_matrix(thetaf_sr_new.slice(m), thetaf_sr_old.slice(m));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
 
-      diff += arma::norm(betaf_nc_new.slice(m).rows(d, N-d-1) - betaf_nc_old.slice(m).rows(d, N-d-1), 2);
-      diff += arma::norm(betab_nc_new.slice(m).rows(d, N-d-1) - betab_nc_old.slice(m).rows(d, N-d-1), 2);
+      diff(counts) = compute_norm_matrix(betab_mean_new.slice(m), betab_mean_old.slice(m));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      diff(counts) = compute_norm_matrix(thetab_sr_new.slice(m), thetab_sr_old.slice(m));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      // diff(counts) = compute_norm_matrix(xi2f_new.slice(m), xi2f_old.slice(m));
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(tau2f_new.slice(m), tau2f_old.slice(m));
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(xi2b_new.slice(m), xi2b_old.slice(m));
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(tau2b_new.slice(m), tau2b_old.slice(m));
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+
+      diff(counts) = compute_norm_matrix(betaf_nc_new.slice(m).rows(d, N-d-1), betaf_nc_old.slice(m).rows(d, N-d-1));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      diff(counts) = compute_norm_matrix(betab_nc_new.slice(m).rows(d, N-d-1), betab_nc_old.slice(m).rows(d, N-d-1));
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
 
       if(!ind){
-        diff += arma::norm(thetaf_sr_chol_new.col(m) - thetaf_sr_chol_old.col(m), 2);
-        diff += arma::norm(thetab_sr_chol_new.col(m) - thetab_sr_chol_old.col(m), 2);
+        diff(counts) = compute_norm_matrix(betaf_nc_chol_new.slice(m).rows(d, N-d-1), betaf_nc_chol_old.slice(m).rows(d, N-d-1));
+        flag = (diff(counts) < epsilon) && flag;
+        counts += 1;
 
-        diff += arma::norm(betaf_mean_chol_new.col(m) - betaf_mean_chol_old.col(m), 2);
-        diff += arma::norm(betab_mean_chol_new.col(m) - betab_mean_chol_old.col(m), 2);
-
-        diff += arma::norm(tau2f_chol_new.col(m) - tau2f_chol_old.col(m));
-        diff += arma::norm(tau2b_chol_new.col(m) - tau2b_chol_old.col(m));
-
-        diff += arma::norm(xi2f_chol_new.col(m) - xi2f_chol_old.col(m));
-        diff += arma::norm(xi2b_chol_new.col(m) - xi2b_chol_old.col(m));
-
-        diff += arma::norm(betaf_nc_chol_new.slice(m).rows(d, N-d-1) - betaf_nc_chol_old.slice(m).rows(d, N-d-1), 2);
-        diff += arma::norm(betab_nc_chol_new.slice(m).rows(d, N-d-1) - betab_nc_chol_old.slice(m).rows(d, N-d-1), 2);
+        diff(counts) = compute_norm_matrix(betab_nc_chol_new.slice(m).rows(d, N-d-1), betab_nc_chol_old.slice(m).rows(d, N-d-1));
+        flag = (diff(counts) < epsilon) && flag;
+        counts += 1;
       }
     }
+
+    if(!ind){
+      diff(counts) = compute_norm_matrix(thetaf_sr_chol_new, thetaf_sr_chol_old);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      diff(counts) = compute_norm_matrix(thetab_sr_chol_new, thetab_sr_chol_old);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      diff(counts) = compute_norm_matrix(betaf_mean_chol_new, betaf_mean_chol_old);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      diff(counts) = compute_norm_matrix(betab_mean_chol_new, betab_mean_chol_old);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      // diff(counts) = compute_norm_matrix(tau2f_chol_new, tau2f_chol_old);
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(tau2b_chol_new, tau2b_chol_old);
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(xi2f_chol_new, xi2f_chol_old);
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+      //
+      // diff(counts) = compute_norm_matrix(xi2b_chol_new, xi2b_chol_old);
+      // flag = (diff(counts) < epsilon) && flag;
+      // counts += 1;
+    }
     if(!kappa2f_new.is_finite()){
-      Rcout << "kappa2f" << "\n";
+      Rcout << "kappa2f: " << kappa2f_new <<"\n";
     }
     if(!lambda2f_new.is_finite()){
-      Rcout << "lambda2f" << "\n";
+      Rcout << "lambda2f: " << lambda2f_new << "\n";
+      Rcout << "a_tauf: " << a_tauf_old << "\n";
     }
 
     if(!kappa2b_new.is_finite()){
       Rcout << "kappa2b" << "\n";
     }
     if(!lambda2b_new.is_finite()){
-      Rcout << "lambda2b" << "\n";
+      Rcout << "lambda2b: " << lambda2b_new << "\n";
+      Rcout << "a_taub: " << a_taub_old << "\n";
     }
 
-    diff += arma::norm(kappa2f_new - kappa2f_old, 2);
-    diff += arma::norm(lambda2f_new - lambda2f_old, 2);
-    diff += arma::norm(kappa2b_new - kappa2b_old, 2);
-    diff += arma::norm(lambda2b_new - lambda2b_old, 2);
-
+    // diff(counts) = compute_norm_vector(kappa2f_new, kappa2f_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(lambda2f_new, lambda2f_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(kappa2b_new, kappa2b_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(lambda2b_new, lambda2b_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(a_xif_new, a_xif_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(a_xib_new, a_xib_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(a_tauf_new, a_tauf_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
+    //
+    // diff(counts) = compute_norm_vector(a_taub_new, a_taub_old);
+    // flag = (diff(counts) < epsilon) && flag;
+    // counts += 1;
 
     // update old state
     betaf_mean_old = betaf_mean_new;
@@ -982,17 +1321,33 @@ List vi_shrinkTVP(arma::mat y_fwd,
     xi2b_old = xi2b_new;
     xi2f_inv_old = xi2f_inv_new;
     xi2b_inv_old = xi2b_inv_new;
+    xi2f_log_old = xi2f_log_new;
+    xi2b_log_old = xi2b_log_new;
 
     tau2f_old = tau2f_new;
     tau2b_old = tau2b_new;
     tau2f_inv_old = tau2f_inv_new;
     tau2b_inv_old = tau2b_inv_new;
+    tau2f_log_old = tau2f_log_new;
+    tau2b_log_old = tau2b_log_new;
 
     kappa2f_old = kappa2f_new;
     kappa2b_old = kappa2b_new;
+    kappa2f_log_old = kappa2f_log_new;
+    kappa2b_log_old = kappa2b_log_new;
+
 
     lambda2f_old = lambda2f_new;
     lambda2b_old = lambda2b_new;
+
+    lambda2f_log_old = lambda2f_log_new;
+    lambda2b_log_old = lambda2b_log_new;
+
+    a_xif_old = a_xif_new;
+    a_xib_old = a_xib_new;
+
+    a_tauf_old = a_tauf_new;
+    a_taub_old = a_taub_new;
 
     betaf_nc_old = betaf_nc_new;
     betab_nc_old = betab_nc_new;
@@ -1013,11 +1368,15 @@ List vi_shrinkTVP(arma::mat y_fwd,
       xi2b_chol_old = xi2b_chol_new;
       xi2f_inv_chol_old = xi2f_inv_chol_new;
       xi2b_inv_chol_old = xi2b_inv_chol_new;
+      xi2f_log_chol_old = xi2f_log_chol_new;
+      xi2b_log_chol_old = xi2b_log_chol_new;
 
       tau2f_chol_old = tau2f_chol_new;
       tau2b_chol_old = tau2b_chol_new;
       tau2f_inv_chol_old = tau2f_inv_chol_new;
       tau2b_inv_chol_old = tau2b_inv_chol_new;
+      tau2f_log_chol_old = tau2f_log_chol_new;
+      tau2b_log_chol_old = tau2b_log_chol_new;
     }
 
 
@@ -1062,10 +1421,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
                               _["beta"] = List::create(_["f"] = betaf, _["b"] = betab),
                               _["xi2"] = List::create(_["f"] = xi2f_old, _["b"] = xi2b_old),
                               _["tau2"] = List::create(_["f"] = tau2f_old, _["b"] = tau2b_old),
-                              _["xi2_inv"] = List::create(_["f"] = xi2f_inv_old, _["b"] = xi2b_inv_old),
-                              _["tau2_inv"] = List::create(_["f"] = tau2f_inv_old, _["b"] = tau2b_inv_old),
                               _["kappa2"] = List::create(_["f"] = kappa2f_old, _["b"] = kappa2b_old),
                               _["lambda2"] = List::create(_["f"] = lambda2f_old, _["b"] = lambda2b_old),
+                              _["a_xi"] = List::create(_["f"] = a_xif_old, _["b"] = a_xib_old),
+                              _["a_tau"] = List::create(_["f"] = a_tauf_old, _["b"] = a_taub_old),
                               _["iter"] = j,
                               _["diff"] = diff,
                               _["success_vals"] = List::create(
@@ -1085,10 +1444,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
                               _["beta_nc_chol"] = List::create(_["f"] = betaf_nc_chol_old, _["b"] = betab_nc_chol_old),
                               _["xi2"] = List::create(_["f"] = xi2f_old, _["b"] = xi2b_old),
                               _["tau2"] = List::create(_["f"] = tau2f_old, _["b"] = tau2b_old),
-                              _["xi2_inv"] = List::create(_["f"] = xi2f_inv_old, _["b"] = xi2b_inv_old),
-                              _["tau2_inv"] = List::create(_["f"] = tau2f_inv_old, _["b"] = tau2b_inv_old),
                               _["kappa2"] = List::create(_["f"] = kappa2f_old, _["b"] = kappa2b_old),
                               _["lambda2"] = List::create(_["f"] = lambda2f_old, _["b"] = lambda2b_old),
+                              _["a_xi"] = List::create(_["f"] = a_xif_old, _["b"] = a_xib_old),
+                              _["a_tau"] = List::create(_["f"] = a_tauf_old, _["b"] = a_taub_old),
                               _["iter"] = j,
                               _["diff"] = diff,
                               _["success_vals"] = List::create(

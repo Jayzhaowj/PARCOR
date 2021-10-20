@@ -281,8 +281,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // vi_shrinkTVP
-List vi_shrinkTVP(arma::mat y_fwd, arma::mat y_bwd, int d, double d1, double d2, double e1, double e2, double a_xi, double a_tau, bool learn_a_xi, bool learn_a_tau, int iter_max, bool ind, double S_0, double epsilon, bool skip);
-RcppExport SEXP _PARCOR_vi_shrinkTVP(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP iter_maxSEXP, SEXP indSEXP, SEXP S_0SEXP, SEXP epsilonSEXP, SEXP skipSEXP) {
+List vi_shrinkTVP(arma::mat y_fwd, arma::mat y_bwd, int d, double d1, double d2, double e1, double e2, double a_xi, double a_tau, bool learn_a_xi, bool learn_a_tau, int iter_max, bool ind, double S_0, double epsilon, bool skip, int sample_size, double b_xi, double b_tau);
+RcppExport SEXP _PARCOR_vi_shrinkTVP(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP iter_maxSEXP, SEXP indSEXP, SEXP S_0SEXP, SEXP epsilonSEXP, SEXP skipSEXP, SEXP sample_sizeSEXP, SEXP b_xiSEXP, SEXP b_tauSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -302,7 +302,10 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type S_0(S_0SEXP);
     Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
     Rcpp::traits::input_parameter< bool >::type skip(skipSEXP);
-    rcpp_result_gen = Rcpp::wrap(vi_shrinkTVP(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip));
+    Rcpp::traits::input_parameter< int >::type sample_size(sample_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type b_xi(b_xiSEXP);
+    Rcpp::traits::input_parameter< double >::type b_tau(b_tauSEXP);
+    rcpp_result_gen = Rcpp::wrap(vi_shrinkTVP(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip, sample_size, b_xi, b_tau));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -322,7 +325,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_run_whittle", (DL_FUNC) &_PARCOR_run_whittle, 3},
     {"_PARCOR_sample_tvar_coef", (DL_FUNC) &_PARCOR_sample_tvar_coef, 8},
     {"_PARCOR_run_dl", (DL_FUNC) &_PARCOR_run_dl, 2},
-    {"_PARCOR_vi_shrinkTVP", (DL_FUNC) &_PARCOR_vi_shrinkTVP, 16},
+    {"_PARCOR_vi_shrinkTVP", (DL_FUNC) &_PARCOR_vi_shrinkTVP, 19},
     {NULL, NULL, 0}
 };
 

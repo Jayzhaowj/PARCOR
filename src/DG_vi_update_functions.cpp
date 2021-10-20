@@ -2,7 +2,10 @@
 #include <math.h>
 #include <cmath>
 #include <boost/math/special_functions/bessel.hpp>
+#include <boost/math/special_functions/digamma.hpp>
+#include <boost/math/special_functions/bessel_prime.hpp>
 #include "sample_parameters.h"
+#include "Egig_log_is.h"
 #include <iostream>
 using namespace Rcpp;
 
@@ -11,6 +14,7 @@ using namespace Rcpp;
 
 void update_local_shrink(arma::vec& local_shrink,
                          arma::vec& local_shrink_inv,
+                         arma::vec& local_shrink_log,
                          const arma::vec& param_vec2,
                          double global_shrink,
                          double a){
@@ -33,7 +37,7 @@ void update_local_shrink(arma::vec& local_shrink,
     //}else{
     local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
     local_shrink_inv(j) = std::sqrt(p2)*boost::math::cyl_bessel_k(p1+1, part1)/(std::sqrt(p3)*boost::math::cyl_bessel_k(p1, part1)) - 2*p1/p3;
-
+    local_shrink_log(j) = Egig_log(p1, p2, p3);
     //}
 
   }
@@ -43,15 +47,16 @@ void update_local_shrink(arma::vec& local_shrink,
 }
 
 
-double update_global_shrink(const arma::vec& prior_var,
-                            double a,
-                            double hyper1,
-                            double hyper2){
+void update_global_shrink(const arma::vec& prior_var,
+                          double& global_shrink,
+                          double& global_shrink_log,
+                          double a,
+                          double hyper1,
+                          double hyper2){
   int d = prior_var.n_elem;
 
   double hyper1_full = hyper1 + a*d;
   double hyper2_full = hyper2 + arma::mean(prior_var) * a * d * 0.5;
-  double global_shrink = hyper1_full/hyper2_full;
-  //res_protector(global_shrink);
-  return global_shrink;
+  global_shrink = hyper1_full/hyper2_full;
+  global_shrink_log = boost::math::digamma(hyper1_full) - std::log(hyper2_full);
 }

@@ -45,9 +45,7 @@ mcmc_sPARCOR <- function(y,
                         d1 = 0.001,
                         d2 = 0.001,
                         b_xi = 10,
-                        b_tau = 10,
-                        nu_xi = 5,
-                        nu_tau = 5)
+                        b_tau = 10)
 
   # default sv params
   default_hyper_sv <- list(Bsigma_sv = 1,

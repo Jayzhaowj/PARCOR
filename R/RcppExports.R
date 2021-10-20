@@ -57,7 +57,7 @@ run_dl <- function(phi_fwd, phi_bwd) {
     .Call(`_PARCOR_run_dl`, phi_fwd, phi_bwd)
 }
 
-vi_shrinkTVP <- function(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip) {
-    .Call(`_PARCOR_vi_shrinkTVP`, y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip)
+vi_shrinkTVP <- function(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip, sample_size, b_xi, b_tau) {
+    .Call(`_PARCOR_vi_shrinkTVP`, y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip, sample_size, b_xi, b_tau)
 }
 
