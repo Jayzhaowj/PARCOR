@@ -191,8 +191,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // do_mcmc_sPARCOR
-List do_mcmc_sPARCOR(arma::mat y_fwd, arma::mat y_bwd, int d, int niter, int nburn, int nthin, double c0, double g0, double G0, double d1, double d2, double e1, double e2, bool learn_lambda2, bool learn_kappa2, double lambda2, double kappa2, bool learn_a_xi, bool learn_a_tau, double a_xi, double a_tau, double c_tuning_par_xi, double c_tuning_par_tau, double b_xi, double b_tau, double nu_xi, double nu_tau, bool display_progress, bool ret_beta_nc, bool ind, bool skip, bool sv, double Bsigma_sv, double a0_sv, double b0_sv, double bmu, double Bmu);
-RcppExport SEXP _PARCOR_do_mcmc_sPARCOR(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP niterSEXP, SEXP nburnSEXP, SEXP nthinSEXP, SEXP c0SEXP, SEXP g0SEXP, SEXP G0SEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP learn_lambda2SEXP, SEXP learn_kappa2SEXP, SEXP lambda2SEXP, SEXP kappa2SEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP c_tuning_par_xiSEXP, SEXP c_tuning_par_tauSEXP, SEXP b_xiSEXP, SEXP b_tauSEXP, SEXP nu_xiSEXP, SEXP nu_tauSEXP, SEXP display_progressSEXP, SEXP ret_beta_ncSEXP, SEXP indSEXP, SEXP skipSEXP, SEXP svSEXP, SEXP Bsigma_svSEXP, SEXP a0_svSEXP, SEXP b0_svSEXP, SEXP bmuSEXP, SEXP BmuSEXP) {
+List do_mcmc_sPARCOR(arma::mat y_fwd, arma::mat y_bwd, int d, int niter, int nburn, int nthin, double c0, double g0, double G0, double d1, double d2, double e1, double e2, bool learn_lambda2, bool learn_kappa2, double lambda2, double kappa2, bool learn_a_xi, bool learn_a_tau, double a_xi, double a_tau, double a_tuning_par_xi, double a_tuning_par_tau, double beta_a_xi, double beta_a_tau, double alpha_a_xi, double alpha_a_tau, bool display_progress, bool ret_beta_nc, bool ind, bool skip, bool sv, double Bsigma_sv, double a0_sv, double b0_sv, double bmu, double Bmu, arma::vec adaptive, arma::vec target_rates, arma::vec max_adapts, arma::ivec batch_sizes);
+RcppExport SEXP _PARCOR_do_mcmc_sPARCOR(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP niterSEXP, SEXP nburnSEXP, SEXP nthinSEXP, SEXP c0SEXP, SEXP g0SEXP, SEXP G0SEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP learn_lambda2SEXP, SEXP learn_kappa2SEXP, SEXP lambda2SEXP, SEXP kappa2SEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP a_tuning_par_xiSEXP, SEXP a_tuning_par_tauSEXP, SEXP beta_a_xiSEXP, SEXP beta_a_tauSEXP, SEXP alpha_a_xiSEXP, SEXP alpha_a_tauSEXP, SEXP display_progressSEXP, SEXP ret_beta_ncSEXP, SEXP indSEXP, SEXP skipSEXP, SEXP svSEXP, SEXP Bsigma_svSEXP, SEXP a0_svSEXP, SEXP b0_svSEXP, SEXP bmuSEXP, SEXP BmuSEXP, SEXP adaptiveSEXP, SEXP target_ratesSEXP, SEXP max_adaptsSEXP, SEXP batch_sizesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -217,12 +217,12 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type learn_a_tau(learn_a_tauSEXP);
     Rcpp::traits::input_parameter< double >::type a_xi(a_xiSEXP);
     Rcpp::traits::input_parameter< double >::type a_tau(a_tauSEXP);
-    Rcpp::traits::input_parameter< double >::type c_tuning_par_xi(c_tuning_par_xiSEXP);
-    Rcpp::traits::input_parameter< double >::type c_tuning_par_tau(c_tuning_par_tauSEXP);
-    Rcpp::traits::input_parameter< double >::type b_xi(b_xiSEXP);
-    Rcpp::traits::input_parameter< double >::type b_tau(b_tauSEXP);
-    Rcpp::traits::input_parameter< double >::type nu_xi(nu_xiSEXP);
-    Rcpp::traits::input_parameter< double >::type nu_tau(nu_tauSEXP);
+    Rcpp::traits::input_parameter< double >::type a_tuning_par_xi(a_tuning_par_xiSEXP);
+    Rcpp::traits::input_parameter< double >::type a_tuning_par_tau(a_tuning_par_tauSEXP);
+    Rcpp::traits::input_parameter< double >::type beta_a_xi(beta_a_xiSEXP);
+    Rcpp::traits::input_parameter< double >::type beta_a_tau(beta_a_tauSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha_a_xi(alpha_a_xiSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha_a_tau(alpha_a_tauSEXP);
     Rcpp::traits::input_parameter< bool >::type display_progress(display_progressSEXP);
     Rcpp::traits::input_parameter< bool >::type ret_beta_nc(ret_beta_ncSEXP);
     Rcpp::traits::input_parameter< bool >::type ind(indSEXP);
@@ -233,7 +233,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type b0_sv(b0_svSEXP);
     Rcpp::traits::input_parameter< double >::type bmu(bmuSEXP);
     Rcpp::traits::input_parameter< double >::type Bmu(BmuSEXP);
-    rcpp_result_gen = Rcpp::wrap(do_mcmc_sPARCOR(y_fwd, y_bwd, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, c_tuning_par_xi, c_tuning_par_tau, b_xi, b_tau, nu_xi, nu_tau, display_progress, ret_beta_nc, ind, skip, sv, Bsigma_sv, a0_sv, b0_sv, bmu, Bmu));
+    Rcpp::traits::input_parameter< arma::vec >::type adaptive(adaptiveSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type target_rates(target_ratesSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type max_adapts(max_adaptsSEXP);
+    Rcpp::traits::input_parameter< arma::ivec >::type batch_sizes(batch_sizesSEXP);
+    rcpp_result_gen = Rcpp::wrap(do_mcmc_sPARCOR(y_fwd, y_bwd, d, niter, nburn, nthin, c0, g0, G0, d1, d2, e1, e2, learn_lambda2, learn_kappa2, lambda2, kappa2, learn_a_xi, learn_a_tau, a_xi, a_tau, a_tuning_par_xi, a_tuning_par_tau, beta_a_xi, beta_a_tau, alpha_a_xi, alpha_a_tau, display_progress, ret_beta_nc, ind, skip, sv, Bsigma_sv, a0_sv, b0_sv, bmu, Bmu, adaptive, target_rates, max_adapts, batch_sizes));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -321,7 +325,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_filter_smooth_TVVAR", (DL_FUNC) &_PARCOR_filter_smooth_TVVAR, 9},
     {"_PARCOR_filter", (DL_FUNC) &_PARCOR_filter, 10},
     {"_PARCOR_filter_smooth", (DL_FUNC) &_PARCOR_filter_smooth, 11},
-    {"_PARCOR_do_mcmc_sPARCOR", (DL_FUNC) &_PARCOR_do_mcmc_sPARCOR, 37},
+    {"_PARCOR_do_mcmc_sPARCOR", (DL_FUNC) &_PARCOR_do_mcmc_sPARCOR, 41},
     {"_PARCOR_run_whittle", (DL_FUNC) &_PARCOR_run_whittle, 3},
     {"_PARCOR_sample_tvar_coef", (DL_FUNC) &_PARCOR_sample_tvar_coef, 8},
     {"_PARCOR_run_dl", (DL_FUNC) &_PARCOR_run_dl, 2},

@@ -8,6 +8,7 @@
 #include "sample_parameters.h"
 #include "ffbs.h"
 #include <shrinkTVP.h>
+
 using namespace Rcpp;
 
 // [[Rcpp::export]]
@@ -32,12 +33,12 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
                      bool learn_a_tau,
                      double a_xi,
                      double a_tau,
-                     double c_tuning_par_xi,
-                     double c_tuning_par_tau,
-                     double b_xi,
-                     double b_tau,
-                     double nu_xi,
-                     double nu_tau,
+                     double a_tuning_par_xi,
+                     double a_tuning_par_tau,
+                     double beta_a_xi,
+                     double beta_a_tau,
+                     double alpha_a_xi,
+                     double alpha_a_tau,
                      bool display_progress,
                      bool ret_beta_nc,
                      bool ind,
@@ -47,7 +48,11 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
                      double a0_sv,
                      double b0_sv,
                      double bmu,
-                     double Bmu) {
+                     double Bmu,
+                     arma::vec adaptive,
+                     arma::vec target_rates,
+                     arma::vec max_adapts,
+                     arma::ivec batch_sizes) {
 
   // progress bar setup
   arma::vec prog_rep_points = arma::round(arma::linspace(0, niter, 50));
@@ -216,22 +221,6 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
   arma::mat a_xib_save;
   arma::mat a_taub_save;
 
-  arma::vec accept_a_xif_tot(n_I, arma::fill::zeros);
-  arma::vec accept_a_xif_pre(n_I, arma::fill::zeros);
-  arma::vec accept_a_xif_post(n_I, arma::fill::zeros);
-
-  arma::vec accept_a_tauf_tot(n_I, arma::fill::zeros);
-  arma::vec accept_a_tauf_pre(n_I, arma::fill::zeros);
-  arma::vec accept_a_tauf_post(n_I, arma::fill::zeros);
-
-  arma::vec accept_a_xib_tot(n_I, arma::fill::zeros);
-  arma::vec accept_a_xib_pre(n_I, arma::fill::zeros);
-  arma::vec accept_a_xib_post(n_I, arma::fill::zeros);
-
-  arma::vec accept_a_taub_tot(n_I, arma::fill::zeros);
-  arma::vec accept_a_taub_pre(n_I, arma::fill::zeros);
-  arma::vec accept_a_taub_post(n_I, arma::fill::zeros);
-
   if (learn_a_xi){
     a_xif_save = arma::mat(n_I, nsave, arma::fill::none);
     a_xib_save = arma::mat(n_I, nsave, arma::fill::none);
@@ -241,6 +230,60 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
     a_taub_save = arma::mat(n_I, nsave, arma::fill::none);
   }
 
+  arma::vec a_xif_sd_save;
+  arma::vec a_tauf_sd_save;
+  arma::vec a_xif_acc_rate_save;
+  arma::vec a_tauf_acc_rate_save;
+
+  arma::vec a_xib_sd_save;
+  arma::vec a_taub_sd_save;
+  arma::vec a_xib_acc_rate_save;
+  arma::vec a_taub_acc_rate_save;
+
+  if(bool(adaptive(0)) & learn_a_xi){
+    a_xif_sd_save = arma::vec(std::floor(niter/batch_sizes(0)), arma::fill::zeros);
+    a_xif_acc_rate_save = arma::vec(std::floor(niter/batch_sizes(0)), arma::fill::zeros);
+
+    a_xib_sd_save = arma::vec(std::floor(niter/batch_sizes(0)), arma::fill::zeros);
+    a_xib_acc_rate_save = arma::vec(std::floor(niter/batch_sizes(0)), arma::fill::zeros);
+  }
+
+  if(bool(adaptive(1)) & learn_a_tau){
+    a_tauf_sd_save = arma::vec(std::floor(niter/batch_sizes(1)), arma::fill::zeros);
+    a_tauf_acc_rate_save = arma::vec(std::floor(niter/batch_sizes(1)), arma::fill::zeros);
+
+    a_taub_sd_save = arma::vec(std::floor(niter/batch_sizes(1)), arma::fill::zeros);
+    a_taub_acc_rate_save = arma::vec(std::floor(niter/batch_sizes(1)), arma::fill::zeros);
+  }
+
+  // Objects necessary for the use of adaptive MH
+  arma::mat batches_xif(arma::max(batch_sizes), n_I, arma::fill::zeros);
+  arma::mat batches_xib(arma::max(batch_sizes), n_I, arma::fill::zeros);
+  arma::mat batches_tauf(arma::max(batch_sizes), n_I, arma::fill::zeros);
+  arma::mat batches_taub(arma::max(batch_sizes), n_I, arma::fill::zeros);
+
+  arma::vec curr_sds_xif(n_I, arma::fill::zeros);
+  arma::vec curr_sds_tauf(n_I, arma::fill::zeros);
+  arma::vec curr_sds_xib(n_I, arma::fill::zeros);
+  arma::vec curr_sds_taub(n_I, arma::fill::zeros);
+  curr_sds_xif.fill(a_tuning_par_xi);
+  curr_sds_xib.fill(a_tuning_par_xi);
+  curr_sds_tauf.fill(a_tuning_par_tau);
+  curr_sds_taub.fill(a_tuning_par_tau);
+
+  arma::ivec batch_nrs_xif(n_I, arma::fill::ones);
+  arma::ivec batch_nrs_xib(n_I, arma::fill::ones);
+  arma::ivec batch_nrs_tauf(n_I, arma::fill::ones);
+  arma::ivec batch_nrs_taub(n_I, arma::fill::ones);
+
+  arma::ivec batch_pos_xif(n_I, arma::fill::zeros);
+  arma::ivec batch_pos_xib(n_I, arma::fill::zeros);
+  arma::ivec batch_pos_tauf(n_I, arma::fill::zeros);
+  arma::ivec batch_pos_taub(n_I, arma::fill::zeros);
+
+  arma::vec curr_batch;
+  bool is_adaptive = arma::sum(adaptive) > 0;
+  //
   arma::mat beta_nc_tmp_tilde;
   arma::mat betaenter;
   arma::mat beta_diff_pre;
@@ -898,63 +941,6 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
 
     }
 
-
-    if (learn_a_xi){
-      for(int k = 0; k < n_I; k++){
-        double before = a_xif_samp(k);
-        try {
-          //double tmp = shrinkTVP::DG_MH_step(a_xif_samp(k), c_tuning_par_xi, kappa2f_samp(k), arma::vectorise(thetaf_sr_samp.col(k)), b_xi, nu_xi, d1, d2);
-          double tmp = 1.0;
-          a_xif_samp(k) = tmp;
-        } catch(...) {
-          a_xif_samp(k) = arma::datum::nan;
-          if (succesful == true){
-            fail = "sample forward a_xi";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
-
-        if (before != a_xif_samp(k)){
-          accept_a_xif_tot(k) += 1;
-          if (j < nburn){
-            accept_a_xif_pre(k) += 1;
-          } else {
-            accept_a_xif_post(k) += 1;
-          }
-        }
-      }
-
-    }
-
-    if (learn_a_tau){
-      for(int k = 0; k < n_I; k++){
-        double before = a_tauf_samp(k);
-        try {
-          //double tmp = shrinkTVP::DG_MH_step(a_tauf_samp(k), c_tuning_par_tau, n_I*d, lambda2f_samp(k), arma::vectorise(betaf_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
-          double tmp = 1.0;
-          a_tauf_samp(k) = tmp;
-        } catch(...){
-          a_tauf_samp(k) = arma::datum::nan;
-          if (succesful == true){
-            fail = "sample forward a_tau";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
-
-        if (before != a_tauf_samp(k)){
-          accept_a_tauf_tot(k) += 1;
-          if (j < nburn){
-            accept_a_tauf_pre(k) += 1;
-          } else {
-            accept_a_tauf_post(k) += 1;
-          }
-        }
-      }
-
-    }
-
     // sample kappa2 and lambda2, if the user specified it
     if (learn_kappa2){
       for(int k = 0; k < n_I; k++){
@@ -1004,64 +990,9 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
       }
     }
 
-    // step d)
-    // sample a_xib and a_taub with MH
-    if (learn_a_xi){
-      for(int k = 0; k < n_I; k++){
-        double before = a_xib_samp(k);
-        try {
-          //double tmp = shrinkTVP::DG_MH_step(a_xib_samp(k), c_tuning_par_xi, (d)*n_I, kappa2b_samp(k), arma::vectorise(thetab_sr_samp.col(k)), b_xi, nu_xi, d1, d2);
-          double tmp = 1.0;
-          a_xib_samp(k) = tmp;
-        } catch(...) {
-          a_xib_samp(k) = arma::datum::nan;
-          if (succesful == true){
-            fail = "sample backward a_xi";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
-
-        if (before != a_xib_samp(k)){
-          accept_a_xib_tot(k) += 1;
-          if (j < nburn){
-            accept_a_xib_pre(k) += 1;
-          } else {
-            accept_a_xib_post(k) += 1;
-          }
-        }
-      }
-
-    }
 
 
-    if (learn_a_tau){
-      for(int k = 0; k < n_I; k++){
-        double before = a_taub_samp(k);
-        try {
-          //double tmp = shrinkTVP::DG_MH_step(a_taub_samp(k), c_tuning_par_tau, (d)*n_I, lambda2b_samp(k), arma::vectorise(betab_mean_samp.col(k)), b_tau , nu_tau, e1, e2);
-          double tmp = 1.0;
-          a_taub_samp(k) = tmp;
-        } catch(...){
-          a_taub_samp(k) = arma::datum::nan;
-          if (succesful == true){
-            fail = "sample backward a_tau";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
 
-        if (before != a_taub_samp(k)){
-          accept_a_taub_tot(k) += 1;
-          if (j < nburn){
-            accept_a_taub_pre(k) += 1;
-          } else {
-            accept_a_taub_post(k) += 1;
-          }
-        }
-      }
-
-    }
 
 
     // sample kappa2 and lambda2, if the user specified it
@@ -1112,7 +1043,123 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
         }
       }
     }
+    if (learn_a_xi){
+      // forward part
+      for(int k = 0; k < n_I; k++){
+        try {
+          if (is_adaptive){
+            curr_batch = batches_xif.col(k);
+          }
+          a_xif_samp(k) = shrinkTVP::DG_MH_step(a_xif_samp(k),
+                                                a_tuning_par_xi,
+                                                kappa2f_samp(k),
+                                                arma::vectorise(thetaf_sr_samp.col(k)),
+                                                beta_a_xi, alpha_a_xi,
+                                                adaptive(0), curr_batch,
+                                                curr_sds_xif(k), target_rates(0),
+                                                max_adapts(0), batch_nrs_xif(k),
+                                                batch_sizes(0), batch_pos_xif(k));
+          if(is_adaptive){
+            batches_xif.col(k) = curr_batch;
+          }
 
+        } catch(...) {
+          a_xif_samp(k) = arma::datum::nan;
+          if (succesful == true){
+            fail = "sample forward a_xi";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+
+      // backward part
+      for(int k = 0; k < n_I; k++){
+        try {
+          if (is_adaptive){
+            curr_batch = batches_xib.col(k);
+          }
+          a_xib_samp(k) = shrinkTVP::DG_MH_step(a_xib_samp(k),
+                                                a_tuning_par_xi,
+                                                kappa2b_samp(k),
+                                                arma::vectorise(thetab_sr_samp.col(k)),
+                                                beta_a_xi, alpha_a_xi,
+                                                adaptive(0), curr_batch,
+                                                curr_sds_xib(k), target_rates(0),
+                                                max_adapts(0), batch_nrs_xib(k),
+                                                batch_sizes(0), batch_pos_xib(k));
+          if(is_adaptive){
+            batches_xib.col(k) = curr_batch;
+          }
+
+        } catch(...) {
+          a_xib_samp(k) = arma::datum::nan;
+          if (succesful == true){
+            fail = "sample backward a_xi";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+
+    }
+
+    if (learn_a_tau){
+      // Forward part
+      for(int k = 0; k < n_I; k++){
+        try {
+          if (is_adaptive){
+            curr_batch = batches_tauf.col(k);
+          }
+          a_tauf_samp(k) = shrinkTVP::DG_MH_step(a_tauf_samp(k),
+                                                 a_tuning_par_tau,
+                                                 lambda2f_samp(k),
+                                                 arma::vectorise(betaf_mean_samp.col(k)),
+                                                 beta_a_tau, alpha_a_tau,
+                                                 adaptive(1), curr_batch,
+                                                 curr_sds_tauf(k), target_rates(1),
+                                                 max_adapts(1), batch_nrs_tauf(k),
+                                                 batch_sizes(1), batch_pos_tauf(k));
+          if(is_adaptive){
+            batches_tauf.col(k) = curr_batch;
+          }
+        } catch(...){
+          a_tauf_samp(k) = arma::datum::nan;
+          if (succesful == true){
+            fail = "sample forward a_tau";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+      // backward part
+      for(int k = 0; k < n_I; k++){
+        try {
+          if (is_adaptive){
+            curr_batch = batches_taub.col(k);
+          }
+          a_taub_samp(k) = shrinkTVP::DG_MH_step(a_taub_samp(k),
+                                                 a_tuning_par_tau,
+                                                 lambda2b_samp(k),
+                                                 arma::vectorise(betab_mean_samp.col(k)),
+                                                 beta_a_tau, alpha_a_tau,
+                                                 adaptive(1), curr_batch,
+                                                 curr_sds_taub(k), target_rates(1),
+                                                 max_adapts(1), batch_nrs_taub(k),
+                                                 batch_sizes(1), batch_pos_taub(k));
+          if(is_adaptive){
+            batches_taub.col(k) = curr_batch;
+          }
+        } catch(...){
+          a_taub_samp(k) = arma::datum::nan;
+          if (succesful == true){
+            fail = "sample backward a_tau";
+            fail_iter = j + 1;
+            succesful = false;
+          }
+        }
+      }
+    }
     // adjust start of storage point depending on store_burn
     int nburn_new = nburn;
 
@@ -1234,6 +1281,27 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
 
     }
 
+    for(int k = 0; k < n_I; k++){
+      if (learn_a_xi & bool(adaptive(0)) & (batch_pos_xif(k) == (batch_sizes(0) - 2))){
+        a_xif_sd_save(batch_nrs_xif(k) - 1) = curr_sds_xif(k);
+        a_xif_acc_rate_save(batch_nrs_xif(k) - 1) = arma::accu(batches_xif.col(0))/batch_sizes(0);
+      }
+      if(learn_a_xi & bool(adaptive(0)) & (batch_pos_xib(k) == (batch_sizes(0) - 2))){
+        a_xib_sd_save(batch_nrs_xib(k) - 1) = curr_sds_xib(k);
+        a_xib_acc_rate_save(batch_nrs_xib(k) - 1) = arma::accu(batches_xib.col(0))/batch_sizes(0);
+      }
+    }
+
+    for(int k = 0; k < n_I; k++){
+      if (learn_a_tau & bool(adaptive(0)) & (batch_pos_tauf(k) == (batch_sizes(0) - 2))){
+        a_tauf_sd_save(batch_nrs_tauf(k) - 1) = curr_sds_tauf(k);
+        a_tauf_acc_rate_save(batch_nrs_tauf(k) - 1) = arma::accu(batches_tauf.col(0))/batch_sizes(0);
+      }
+      if(learn_a_tau & bool(adaptive(0)) & (batch_pos_taub(k) == (batch_sizes(0) - 2))){
+        a_taub_sd_save(batch_nrs_taub(k) - 1) = curr_sds_taub(k);
+        a_taub_acc_rate_save(batch_nrs_taub(k) - 1) = arma::accu(batches_taub.col(0))/batch_sizes(0);
+      }
+    }
     // Random sign switch
     for (int i = start-1; i < d; i++){
       for(int j = 0; j < n_I; j++){
@@ -1278,30 +1346,15 @@ List do_mcmc_sPARCOR(arma::mat y_fwd,
                       _["beta_chol"] = List::create(_["f"] = betaf_chol_save, _["b"] = betab_chol_save),
                       _["xi2"] = List::create(_["f"] = xi2f_save, _["b"] = xi2b_save),
                       _["a_xi"] = List::create(_["f"] = a_xif_save, _["b"] = a_xib_save),
-                      _["a_xi_acceptance"] = List::create(
-                        _["a_xif_acceptance_total"] = accept_a_xif_tot/niter,
-                        _["a_xif_acceptance_pre"] = accept_a_xif_pre/nburn,
-                        _["a_xif_acceptance_post"] = accept_a_xif_post/(niter - nburn),
-                        _["a_xib_acceptance_total"] = accept_a_xib_tot/niter,
-                        _["a_xib_acceptance_pre"] = accept_a_xib_pre/nburn,
-                        _["a_xib_acceptance_post"] = accept_a_xib_post/(niter - nburn)),
-                        _["tau2"] = List::create(_["f"] = tau2f_save, _["b"] = tau2b_save),
-                        _["a_tau"] = List::create(_["f"] = a_tauf_save, _["b"] = a_taub_save),
-                        _["a_tau_acceptance"] = List::create(
-                          _["a_tauf_acceptance_total"] = accept_a_tauf_tot/niter,
-                          _["a_tauf_acceptance_pre"] = accept_a_tauf_pre/nburn,
-                          _["a_tauf_acceptance_post"] = accept_a_tauf_post/(niter - nburn),
-                          _["a_taub_acceptance_total"] = accept_a_taub_tot/niter,
-                          _["a_taub_acceptance_pre"] = accept_a_taub_pre/nburn,
-                          _["a_taub_acceptance_post"] = accept_a_taub_post/(niter - nburn)
-                          ),
-                          _["kappa2"] = List::create(_["f"] = kappa2f_save, _["b"] = kappa2b_save),
-                          _["lambda2"] = List::create(_["f"] = lambda2f_save, _["b"] = lambda2b_save),
-                            _["success_vals"] = List::create(
-                              _["success"] = succesful,
-                              _["fail"] = fail,
-                              _["fail_iter"] = fail_iter)
-                            );
+                      _["tau2"] = List::create(_["f"] = tau2f_save, _["b"] = tau2b_save),
+                      _["a_tau"] = List::create(_["f"] = a_tauf_save, _["b"] = a_taub_save),
+                      _["kappa2"] = List::create(_["f"] = kappa2f_save, _["b"] = kappa2b_save),
+                      _["lambda2"] = List::create(_["f"] = lambda2f_save, _["b"] = lambda2b_save),
+                      _["MH_diag"] = List::create(_["a_xi_sds"] = List::create(_["f"] = a_xif_sd_save, _["b"] = a_xib_sd_save),
+                                                  _["a_xi_acc_rate"] = List::create(_["f"] = a_xif_acc_rate_save, _["b"] = a_xib_acc_rate_save),
+                                                  _["a_tau_sds"] = List::create(_["f"] = a_tauf_sd_save, _["b"] = a_taub_sd_save),
+                                                  _["a_tau_acc_rate"] = List::create(_["f"] = a_tauf_acc_rate_save, _["b"] = a_taub_acc_rate_save)),
+                      _["success_vals"] = List::create(_["success"] = succesful, _["fail"] = fail, _["fail_iter"] = fail_iter));
 }
 
 

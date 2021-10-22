@@ -16,8 +16,6 @@ mcmc_sPARCOR <- function(y,
                          kappa2 = 20,
                          lambda2 = 20,
                          hyperprior_param,
-                         c_tuning_par_xi = 1,
-                         c_tuning_par_tau = 1,
                          display_progress = TRUE,
                          ret_beta_nc = FALSE,
                          S_0,
@@ -27,7 +25,8 @@ mcmc_sPARCOR <- function(y,
                          skip = TRUE,
                          cpus = 1,
                          sv,
-                         sv_param){
+                         sv_param,
+                         MH_tuning){
 
   # number of time series
   K <- dim(y)[2]
@@ -44,8 +43,10 @@ mcmc_sPARCOR <- function(y,
                         e2 = 0.001,
                         d1 = 0.001,
                         d2 = 0.001,
-                        b_xi = 10,
-                        b_tau = 10)
+                        beta_a_xi = 10,
+                        beta_a_tau = 10,
+                        alpha_a_xi = 5,
+                        alpha_a_tau = 5)
 
   # default sv params
   default_hyper_sv <- list(Bsigma_sv = 1,
@@ -54,6 +55,17 @@ mcmc_sPARCOR <- function(y,
                            bmu = 0,
                            Bmu = 1)
 
+  # default tuning parameters
+  default_tuning_par <- list(a_xi_adaptive = TRUE,
+                             a_xi_tuning_par = 1,
+                             a_xi_target_rate = 0.44,
+                             a_xi_max_adapt = 0.01,
+                             a_xi_batch_size = 50,
+                             a_tau_adaptive = TRUE,
+                             a_tau_tuning_par = 1,
+                             a_tau_target_rate = 0.44,
+                             a_tau_max_adapt = 0.01,
+                             a_tau_batch_size = 50)
   # Change hyperprior values if user overwrites them
   if (missing(hyperprior_param)){
     hyperprior_param <- default_hyper
@@ -64,17 +76,21 @@ mcmc_sPARCOR <- function(y,
     sv_param <- default_hyper_sv
   }
 
-  # Check if all numeric inputs are correct
-  to_test_num <- list(lambda2 = lambda2,
-                      kappa2 = kappa2,
-                      a_xi = a_xi,
-                      a_tau = a_tau,
-                      c_tuning_par_xi = c_tuning_par_xi,
-                      c_tuning_par_tau = c_tuning_par_tau)
-
-  if (missing(hyperprior_param) == FALSE){
-    to_test_num <- c(to_test_num, hyperprior_param)
+  # Change tuning parameter values if user overwrites them
+  if (missing(MH_tuning)){
+    MH_tuning <- default_tuning_par
   }
+  # # Check if all numeric inputs are correct
+  # to_test_num <- list(lambda2 = lambda2,
+  #                     kappa2 = kappa2,
+  #                     a_xi = a_xi,
+  #                     a_tau = a_tau,
+  #                     a_tuning_par_xi = MH_tuning$a_tuning_par_xi,
+  #                     a_tuning_par_tau = MH_tuning$a_tuning_par_tau)
+  #
+  # if (missing(hyperprior_param) == FALSE){
+  #   to_test_num <- c(to_test_num, hyperprior_param)
+  # }
 
 
 
@@ -136,12 +152,12 @@ mcmc_sPARCOR <- function(y,
                                   learn_a_tau,
                                   a_xi,
                                   a_tau,
-                                  c_tuning_par_xi,
-                                  c_tuning_par_tau,
-                                  hyperprior_param$b_xi,
-                                  hyperprior_param$b_tau,
-                                  hyperprior_param$nu_xi,
-                                  hyperprior_param$nu_tau,
+                                  MH_tuning$a_xi_tuning_par,
+                                  MH_tuning$a_tau_tuning_par,
+                                  hyperprior_param$beta_a_xi,
+                                  hyperprior_param$beta_a_tau,
+                                  hyperprior_param$alpha_a_xi,
+                                  hyperprior_param$alpha_a_tau,
                                   display_progress,
                                   ret_beta_nc,
                                   ind,
@@ -151,7 +167,11 @@ mcmc_sPARCOR <- function(y,
                                   sv_param$a0_sv,
                                   sv_param$b0_sv,
                                   sv_param$bmu,
-                                  sv_param$Bmu)
+                                  sv_param$Bmu,
+                                  unlist(MH_tuning[grep("adaptive", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("target", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("max", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("size", names(MH_tuning))]))
       })
     })
 
@@ -207,12 +227,12 @@ mcmc_sPARCOR <- function(y,
                                   learn_a_tau,
                                   a_xi,
                                   a_tau,
-                                  c_tuning_par_xi,
-                                  c_tuning_par_tau,
-                                  hyperprior_param$b_xi,
-                                  hyperprior_param$b_tau,
-                                  hyperprior_param$nu_xi,
-                                  hyperprior_param$nu_tau,
+                                  MH_tuning$a_xi_tuning_par,
+                                  MH_tuning$a_tau_tuning_par,
+                                  hyperprior_param$beta_a_xi,
+                                  hyperprior_param$beta_a_tau,
+                                  hyperprior_param$alpha_a_xi,
+                                  hyperprior_param$alpha_a_tau,
                                   display_progress,
                                   ret_beta_nc,
                                   ind,
@@ -222,7 +242,11 @@ mcmc_sPARCOR <- function(y,
                                   sv_param$a0_sv,
                                   sv_param$b0_sv,
                                   sv_param$bmu,
-                                  sv_param$Bmu)
+                                  sv_param$Bmu,
+                                  unlist(MH_tuning[grep("adaptive", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("target", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("max", names(MH_tuning))]),
+                                  unlist(MH_tuning[grep("size", names(MH_tuning))]))
       })
     })
 
@@ -256,7 +280,10 @@ mcmc_sPARCOR <- function(y,
                 chol_bwd = result$beta_chol$b,
                 ar = ar_coef_sample,
                 SIGMA = result$SIGMA$f,
-                runtime = runtime))
+                runtime = runtime,
+                MH_diag = result$MH_diag,
+                a_xi = result$a_xi,
+                a_tau = result$a_tau))
   }else{
     ### extract forward part
     phi_fwd <- apply(simplify2array(result$beta$f), 1:3, mean)
@@ -283,6 +310,9 @@ mcmc_sPARCOR <- function(y,
                 phi_chol_bwd = beta_chol_bwd,
                 SIGMA = SIGMA,
                 ar = ar,
-                runtime = runtime))
+                runtime = runtime,
+                MH_diag = result$MH_diag,
+                a_xi = result$a_xi,
+                a_tau = result$a_tau))
   }
 }

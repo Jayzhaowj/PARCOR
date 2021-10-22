@@ -73,8 +73,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::cube betaf_nc_new(N, n_I2, d, arma::fill::none);
   arma::cube betab_nc_new(N, n_I2, d, arma::fill::none);
 
-  arma::cube betaf(N, n_I2, d, arma::fill::none);
-  arma::cube betab(N, n_I2, d, arma::fill::none);
+  arma::cube betaf_old(N, n_I2, d, arma::fill::none);
+  arma::cube betab_old(N, n_I2, d, arma::fill::none);
+  arma::cube betaf_new(N, n_I2, d, arma::fill::none);
+  arma::cube betab_new(N, n_I2, d, arma::fill::none);
 
   arma::cube sigma2f_old(N, n_I, d, arma::fill::none);
   arma::cube sigma2b_old(N, n_I, d, arma::fill::none);
@@ -297,8 +299,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
   arma::cube betab_nc_chol_new;
 
   // definition of non central part cholesky
-  arma::cube betaf_chol;
-  arma::cube betab_chol;
+  arma::cube betaf_chol_old;
+  arma::cube betab_chol_old;
+  arma::cube betaf_chol_new;
+  arma::cube betab_chol_new;
 
   // definition of theta sr cholesky
   arma::mat thetaf_sr_chol_old;
@@ -375,8 +379,10 @@ List vi_shrinkTVP(arma::mat y_fwd,
     betab_nc_chol_new = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
 
     // definition of non central part cholesky
-    betaf_chol = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
-    betab_chol = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
+    betaf_chol_old = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
+    betab_chol_old = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
+    betaf_chol_new = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
+    betab_chol_new = arma::cube(N, n_I*(n_I-1)/2, d, arma::fill::none);
 
     // definition of theta sr cholesky
     thetaf_sr_chol_old = arma::mat(n_I*(n_I-1)/2, d, arma::fill::ones);
@@ -880,8 +886,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
         n_T = N;
         for(int i = n_1-1; i < n_T; i++){
           tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
-          betaf_chol.slice(m-1).row(i) = (betaf_nc_chol_new.slice(m-1).row(i)) % arma::trans(thetaf_sr_chol_new.col(m-1)) + arma::trans(betaf_mean_chol_new.col(m-1));
-          tmp_upper_triangular.elem(upper_indices) = betaf_chol.slice(m-1).row(i);
+          betaf_chol_new.slice(m-1).row(i) = (betaf_nc_chol_new.slice(m-1).row(i)) % arma::trans(thetaf_sr_chol_new.col(m-1)) + arma::trans(betaf_mean_chol_new.col(m-1));
+          tmp_upper_triangular.elem(upper_indices) = betaf_chol_new.slice(m-1).row(i);
           yf.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yf.slice(m).row(i)));
         }
         //backward part
@@ -889,8 +895,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
         n_T = N - m;      // backward index
         for(int i = n_1-1; i < n_T; i++){
           tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
-          betab_chol.slice(m-1).row(i) = (betab_nc_chol_new.slice(m-1).row(i)) % arma::trans(thetab_sr_chol_new.col(m-1)) + arma::trans(betab_mean_chol_new.col(m-1));
-          tmp_upper_triangular.elem(upper_indices) = betab_chol.slice(m-1).row(i);
+          betab_chol_new.slice(m-1).row(i) = (betab_nc_chol_new.slice(m-1).row(i)) % arma::trans(thetab_sr_chol_new.col(m-1)) + arma::trans(betab_mean_chol_new.col(m-1));
+          tmp_upper_triangular.elem(upper_indices) = betab_chol_new.slice(m-1).row(i);
           yb.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yb.slice(m).row(i)));
         }
       }
@@ -1138,142 +1144,143 @@ List vi_shrinkTVP(arma::mat y_fwd,
         }
       }
     }
-    flag = true;
-    counts = 0;
-    // Updating stop criterion
-    for(int m=start-1; m < d; m++){
-      if(!betaf_mean_new.slice(m).is_finite()){
-        Rcout << "betaf_mean" << "\n";
-      }
-      if(!thetaf_sr_new.slice(m).is_finite()){
-        Rcout << "thetaf_sr" << "\n";
-      }
-      if(!xi2f_new.slice(m).is_finite()){
-        Rcout << "xi2f" << "\n";
-      }
-      if(!tau2f_new.slice(m).is_finite()){
-        Rcout << "tau2f_sr" << "\n";
-      }
-      if(!xi2b_new.slice(m).is_finite()){
-        Rcout << "xi2f" << "\n";
-      }
-      if(!tau2b_new.slice(m).is_finite()){
-        Rcout << "tau2f_sr" << "\n";
-      }
-      if(!betab_mean_new.slice(m).is_finite()){
-        Rcout << "betab_mean" << "\n";
-      }
-      if(!thetab_sr_new.slice(m).is_finite()){
-        Rcout << "thetab_sr" << "\n";
-      }
 
-      if(!betaf_nc_new.slice(m).is_finite()){
-        Rcout << "betaf" << "\n";
-      }
-
-      if(!betab_nc_new.slice(m).is_finite()){
-        Rcout << "betab" << "\n";
-      }
-      diff(counts) = compute_norm_matrix(betaf_mean_new.slice(m), betaf_mean_old.slice(m));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(thetaf_sr_new.slice(m), thetaf_sr_old.slice(m));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(betab_mean_new.slice(m), betab_mean_old.slice(m));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(thetab_sr_new.slice(m), thetab_sr_old.slice(m));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      // diff(counts) = compute_norm_matrix(xi2f_new.slice(m), xi2f_old.slice(m));
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(tau2f_new.slice(m), tau2f_old.slice(m));
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(xi2b_new.slice(m), xi2b_old.slice(m));
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(tau2b_new.slice(m), tau2b_old.slice(m));
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-
-      diff(counts) = compute_norm_matrix(betaf_nc_new.slice(m).rows(d, N-d-1), betaf_nc_old.slice(m).rows(d, N-d-1));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(betab_nc_new.slice(m).rows(d, N-d-1), betab_nc_old.slice(m).rows(d, N-d-1));
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      if(!ind){
-        diff(counts) = compute_norm_matrix(betaf_nc_chol_new.slice(m).rows(d, N-d-1), betaf_nc_chol_old.slice(m).rows(d, N-d-1));
-        flag = (diff(counts) < epsilon) && flag;
-        counts += 1;
-
-        diff(counts) = compute_norm_matrix(betab_nc_chol_new.slice(m).rows(d, N-d-1), betab_nc_chol_old.slice(m).rows(d, N-d-1));
-        flag = (diff(counts) < epsilon) && flag;
-        counts += 1;
-      }
-    }
-
-    if(!ind){
-      diff(counts) = compute_norm_matrix(thetaf_sr_chol_new, thetaf_sr_chol_old);
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(thetab_sr_chol_new, thetab_sr_chol_old);
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(betaf_mean_chol_new, betaf_mean_chol_old);
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      diff(counts) = compute_norm_matrix(betab_mean_chol_new, betab_mean_chol_old);
-      flag = (diff(counts) < epsilon) && flag;
-      counts += 1;
-
-      // diff(counts) = compute_norm_matrix(tau2f_chol_new, tau2f_chol_old);
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(tau2b_chol_new, tau2b_chol_old);
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(xi2f_chol_new, xi2f_chol_old);
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-      //
-      // diff(counts) = compute_norm_matrix(xi2b_chol_new, xi2b_chol_old);
-      // flag = (diff(counts) < epsilon) && flag;
-      // counts += 1;
-    }
-    if(!kappa2f_new.is_finite()){
-      Rcout << "kappa2f: " << kappa2f_new <<"\n";
-    }
-    if(!lambda2f_new.is_finite()){
-      Rcout << "lambda2f: " << lambda2f_new << "\n";
-      Rcout << "a_tauf: " << a_tauf_old << "\n";
-    }
-
-    if(!kappa2b_new.is_finite()){
-      Rcout << "kappa2b" << "\n";
-    }
-    if(!lambda2b_new.is_finite()){
-      Rcout << "lambda2b: " << lambda2b_new << "\n";
-      Rcout << "a_taub: " << a_taub_old << "\n";
-    }
-
+    // // Updating stop criterion
+    // for(int m=start-1; m < d; m++){
+    //   if(!betaf_mean_new.slice(m).is_finite()){
+    //     Rcout << "betaf_mean" << "\n";
+    //   }
+    //   if(!thetaf_sr_new.slice(m).is_finite()){
+    //     Rcout << "thetaf_sr" << "\n";
+    //   }
+    //   if(!xi2f_new.slice(m).is_finite()){
+    //     Rcout << "xi2f" << "\n";
+    //   }
+    //   if(!tau2f_new.slice(m).is_finite()){
+    //     Rcout << "tau2f_sr" << "\n";
+    //   }
+    //   if(!xi2b_new.slice(m).is_finite()){
+    //     Rcout << "xi2f" << "\n";
+    //   }
+    //   if(!tau2b_new.slice(m).is_finite()){
+    //     Rcout << "tau2f_sr" << "\n";
+    //   }
+    //   if(!betab_mean_new.slice(m).is_finite()){
+    //     Rcout << "betab_mean" << "\n";
+    //   }
+    //   if(!thetab_sr_new.slice(m).is_finite()){
+    //     Rcout << "thetab_sr" << "\n";
+    //   }
+    //
+    //   if(!betaf_nc_new.slice(m).is_finite()){
+    //     Rcout << "betaf" << "\n";
+    //   }
+    //
+    //   if(!betab_nc_new.slice(m).is_finite()){
+    //     Rcout << "betab" << "\n";
+    //   }
+    //   //#1
+    //   diff(counts) = compute_norm_matrix(betaf_mean_new.slice(m), betaf_mean_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#2
+    //   diff(counts) = compute_norm_matrix(thetaf_sr_new.slice(m), thetaf_sr_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#3
+    //   diff(counts) = compute_norm_matrix(betab_mean_new.slice(m), betab_mean_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#4
+    //   diff(counts) = compute_norm_matrix(thetab_sr_new.slice(m), thetab_sr_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#5
+    //   diff(counts) = compute_norm_matrix(xi2f_new.slice(m), xi2f_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#6
+    //   diff(counts) = compute_norm_matrix(tau2f_new.slice(m), tau2f_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#7
+    //   diff(counts) = compute_norm_matrix(xi2b_new.slice(m), xi2b_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#8
+    //   diff(counts) = compute_norm_matrix(tau2b_new.slice(m), tau2b_old.slice(m));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#9
+    //   diff(counts) = compute_norm_matrix(betaf_nc_new.slice(m).rows(d, N-d-1), betaf_nc_old.slice(m).rows(d, N-d-1));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //   //#10
+    //   diff(counts) = compute_norm_matrix(betab_nc_new.slice(m).rows(d, N-d-1), betab_nc_old.slice(m).rows(d, N-d-1));
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   if(!ind){
+    //     //#11
+    //     diff(counts) = compute_norm_matrix(betaf_nc_chol_new.slice(m).rows(d, N-d-1), betaf_nc_chol_old.slice(m).rows(d, N-d-1));
+    //     flag = (diff(counts) < epsilon) && flag;
+    //     counts += 1;
+    //     //#12
+    //     diff(counts) = compute_norm_matrix(betab_nc_chol_new.slice(m).rows(d, N-d-1), betab_nc_chol_old.slice(m).rows(d, N-d-1));
+    //     flag = (diff(counts) < epsilon) && flag;
+    //     counts += 1;
+    //   }
+    // }
+    //
+    // if(!ind){
+    //   diff(counts) = compute_norm_matrix(thetaf_sr_chol_new, thetaf_sr_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(thetab_sr_chol_new, thetab_sr_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(betaf_mean_chol_new, betaf_mean_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(betab_mean_chol_new, betab_mean_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(tau2f_chol_new, tau2f_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(tau2b_chol_new, tau2b_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(xi2f_chol_new, xi2f_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    //
+    //   diff(counts) = compute_norm_matrix(xi2b_chol_new, xi2b_chol_old);
+    //   flag = (diff(counts) < epsilon) && flag;
+    //   counts += 1;
+    // }
+    // if(!kappa2f_new.is_finite()){
+    //   Rcout << "kappa2f: " << kappa2f_new <<"\n";
+    // }
+    // if(!lambda2f_new.is_finite()){
+    //   Rcout << "lambda2f: " << lambda2f_new << "\n";
+    //   Rcout << "a_tauf: " << a_tauf_old << "\n";
+    // }
+    //
+    // if(!kappa2b_new.is_finite()){
+    //   Rcout << "kappa2b" << "\n";
+    // }
+    // if(!lambda2b_new.is_finite()){
+    //   Rcout << "lambda2b: " << lambda2b_new << "\n";
+    //   Rcout << "a_taub: " << a_taub_old << "\n";
+    // }
+    //
     // diff(counts) = compute_norm_vector(kappa2f_new, kappa2f_old);
     // flag = (diff(counts) < epsilon) && flag;
     // counts += 1;
@@ -1379,6 +1386,41 @@ List vi_shrinkTVP(arma::mat y_fwd,
       tau2b_log_chol_old = tau2b_log_chol_new;
     }
 
+    flag = true;
+    counts = 0;
+    for(int m = start-1; m < d; m++){
+      for(int i = 0; i < N; i++){
+        betaf_new.slice(m).row(i) = (betaf_nc_new.slice(m).row(i)) % arma::trans(arma::vectorise(thetaf_sr_new.slice(m))) + arma::trans(arma::vectorise(betaf_mean_new.slice(m)));
+        betab_new.slice(m).row(i) = (betab_nc_new.slice(m).row(i)) % arma::trans(arma::vectorise(thetab_sr_new.slice(m))) + arma::trans(arma::vectorise(betab_mean_new.slice(m)));
+        if(!ind){
+          // forward part
+          tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
+          tmp_beta.elem(all_indices) = betaf_new.slice(m).row(i);
+          tmp_upper_triangular.elem(upper_indices) = betaf_chol_new.slice(m).row(i);
+          betaf_new.slice(m).row(i) = arma::trans(arma::vectorise(tmp_beta*arma::inv(tmp_upper_triangular)));
+
+          // backward part
+          tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
+          tmp_beta.elem(all_indices) = betab_new.slice(m).row(i);
+          tmp_upper_triangular.elem(upper_indices) = betab_chol_new.slice(m).row(i);
+          betab_new.slice(m).row(i) = arma::trans(arma::vectorise(tmp_beta*arma::inv(tmp_upper_triangular)));
+        }
+      }
+      //diff(counts) = compute_norm_matrix(betaf_new.slice(m).rows(d, N-d-1), betaf_old.slice(m).rows(d, N-d-1));
+      diff(counts) = arma::norm(betaf_new.slice(m).rows(d, N-d-1)-betaf_old.slice(m).rows(d, N-d-1), 2);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+
+      //diff(counts) = compute_norm_matrix(betab_new.slice(m).rows(d, N-d-1), betab_old.slice(m).rows(d, N-d-1));
+      diff(counts) = arma::norm(betab_new.slice(m).rows(d, N-d-1)-betab_old.slice(m).rows(d, N-d-1), 2);
+      flag = (diff(counts) < epsilon) && flag;
+      counts += 1;
+    }
+    betaf_old = betaf_new;
+    betab_old = betab_new;
+    betaf_chol_old = betaf_chol_new;
+    betab_chol_old = betab_chol_new;
+
 
 
     // Increment progress bar
@@ -1390,25 +1432,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
     j += 1;
   }
 
-  for(int m = start-1; m < d; m++){
-    for(int i = 0; i < N; i++){
-      betaf.slice(m).row(i) = (betaf_nc_new.slice(m).row(i)) % arma::trans(arma::vectorise(thetaf_sr_new.slice(m))) + arma::trans(arma::vectorise(betaf_mean_new.slice(m)));
-      betab.slice(m).row(i) = (betab_nc_new.slice(m).row(i)) % arma::trans(arma::vectorise(thetab_sr_new.slice(m))) + arma::trans(arma::vectorise(betab_mean_new.slice(m)));
-      if(!ind){
-        // forward part
-        tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
-        tmp_beta.elem(all_indices) = betaf.slice(m).row(i);
-        tmp_upper_triangular.elem(upper_indices) = betaf_chol.slice(m).row(i);
-        betaf.slice(m).row(i) = arma::trans(arma::vectorise(tmp_beta*arma::inv(tmp_upper_triangular)));
 
-        // backward part
-        tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
-        tmp_beta.elem(all_indices) = betab.slice(m).row(i);
-        tmp_upper_triangular.elem(upper_indices) = betab_chol.slice(m).row(i);
-        betab.slice(m).row(i) = arma::trans(arma::vectorise(tmp_beta*arma::inv(tmp_upper_triangular)));
-      }
-    }
-  }
 
 
 
@@ -1418,7 +1442,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
                               _["theta_sr"] = List::create(_["f"] = thetaf_sr_old, _["b"] = thetab_sr_old),
                               _["beta_mean"] = List::create(_["f"] = betaf_mean_old, _["b"] = betab_mean_old),
                               _["beta_nc"] = List::create(_["f"] = betaf_nc_old, _["b"] = betab_nc_old),
-                              _["beta"] = List::create(_["f"] = betaf, _["b"] = betab),
+                              _["beta"] = List::create(_["f"] = betaf_old, _["b"] = betab_old),
                               _["xi2"] = List::create(_["f"] = xi2f_old, _["b"] = xi2b_old),
                               _["tau2"] = List::create(_["f"] = tau2f_old, _["b"] = tau2b_old),
                               _["kappa2"] = List::create(_["f"] = kappa2f_old, _["b"] = kappa2b_old),
@@ -1437,8 +1461,8 @@ List vi_shrinkTVP(arma::mat y_fwd,
                               _["theta_sr"] = List::create(_["f"] = thetaf_sr_old, _["b"] = thetab_sr_old),
                               _["beta_mean"] = List::create(_["f"] = betaf_mean_old, _["b"] = betab_mean_old),
                               _["beta_nc"] = List::create(_["f"] = betaf_nc_old, _["b"] = betab_nc_old),
-                              _["beta"] = List::create(_["f"] = betaf, _["b"] = betab),
-                              _["beta_chol"] = List::create(_["f"] = betaf_chol, _["b"] = betab_chol),
+                              _["beta"] = List::create(_["f"] = betaf_old, _["b"] = betab_old),
+                              _["beta_chol"] = List::create(_["f"] = betaf_chol_old, _["b"] = betab_chol_old),
                               _["beta_mean_chol"] = List::create(_["f"] = betaf_mean_chol_old, _["b"] = betab_mean_chol_old),
                               _["theta_sr_chol"] = List::create(_["f"] = thetaf_sr_chol_old, _["b"] = thetab_sr_chol_old),
                               _["beta_nc_chol"] = List::create(_["f"] = betaf_nc_chol_old, _["b"] = betab_nc_chol_old),
