@@ -41,9 +41,16 @@ draw.density <- function(phi, SIGMA, start = 0.001, end = 0.499, interval = 0.01
     }else if(wind){
       x_coord <- seq(0, 1, length.out = n_t - 2*P_max)
       y_coord <- w
-      names <- list(bquote('M'['X']), bquote('M'['Y']),
-                 bquote('S'['X']), bquote('S'['Y']),
-                 bquote('W'['X']), bquote('W'['Y']))
+      names <- list(bquote('MRY'['X']), bquote('MRY'['Y']),
+                    bquote('SNS'['X']), bquote('SNS'['Y']),
+                    bquote('WVI'['X']), bquote('WVI'['Y']),
+                    bquote('SUU'['X']), bquote('SUU'['Y']),
+                    bquote('VCB'['X']), bquote('VCB'['Y']),
+                    bquote('APC'['X']), bquote('APC'['Y']),
+                    bquote('SAC'['X']), bquote('SAC'['Y']),
+                    bquote('SMF'['X']), bquote('SMF'['Y']),
+                    bquote('FCH'['X']), bquote('FCH'['Y']),
+                    bquote('MCE'['X']), bquote('MCE'['Y']))
       main1 <- bquote(hat('g')[.(names[[ch1]])]*'(t, '*omega*')')
       main2 <- bquote(hat('g')[.(names[[ch2]])]*'(t, '*omega*')')
       main3 <- bquote(hat(rho)[.(names[[ch1]])*','*.(names[[ch2]])]*'(t, '*omega*')')

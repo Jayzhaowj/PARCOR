@@ -29,18 +29,20 @@ Rcpp::List filter(arma::mat F1_fwd,
   arma::colvec mk_0(n_I2, arma::fill::zeros);
   arma::mat Ck_0(n_I2, n_I2, arma::fill::eye);
   double n_0 = 1.0;
-  arma::dmat mt(n_I2, n_t, arma::fill::zeros);
+  arma::mat mt(n_I2, n_t, arma::fill::zeros);
   arma::mat F1t;
   Rcpp::List Ct(n_t);
   arma::mat Qt(n_I, n_I);
   arma::mat St_sqp(n_I, n_I, arma::fill::zeros);
   arma::mat St(n_I, n_I);
   //arma::dcube St(n_I, n_I, n_t);
-  arma::dmat S_comp(n_I, n_I, arma::fill::zeros);
-  arma::dmat At(n_I2, n_I, arma::fill::zeros);
-  arma::dmat F1(n_I, n_t, arma::fill::zeros);
-  arma::dmat yt(n_I, n_t, arma::fill::zeros);
+  arma::mat S_comp(n_I, n_I, arma::fill::zeros);
+  arma::mat At(n_I2, n_I, arma::fill::zeros);
+  arma::mat F1(n_I, n_t, arma::fill::zeros);
+  arma::mat yt(n_I, n_t, arma::fill::zeros);
   arma::colvec et;
+  arma::mat Qt_inv;
+  arma::mat Qt_inv_sq;
   int ubound = 0;
   int lbound = 0;
   if(type_num == 1){
@@ -58,8 +60,8 @@ Rcpp::List filter(arma::mat F1_fwd,
     yt = F1_bwd;
     sign = -1;
   }
-  arma::dmat F1_new(n_I, n_t, arma::fill::zeros);
-  arma::dmat delta_m = arma::diagmat(arma::pow(delta, -0.5));
+  arma::mat F1_new(n_I, n_t, arma::fill::zeros);
+  arma::mat delta_m = arma::diagmat(arma::pow(delta, -0.5));
   for(int i = lbound; i < ubound; i++){
     F1t = arma::trans(gen_Ft(F1.col(i - sign * m)));
     if(i == 0){
@@ -68,6 +70,7 @@ Rcpp::List filter(arma::mat F1_fwd,
     }else{
       //Qt = F1t * (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) * arma::trans(F1t) + St.slice(i-1);
       Qt = F1t * (delta_m * Rcpp::as<arma::mat>(Ct(i-1)) * delta_m) * arma::trans(F1t) + St;
+
       //St_sqp = arma::sqrtmat_sympd(St.slice(i-1));
       St_sqp = arma::sqrtmat_sympd(St);
     }
@@ -78,13 +81,13 @@ Rcpp::List filter(arma::mat F1_fwd,
       //arma::cout << "Qt is not symmetric \n" << arma::endl;
     }
 
-    arma::dmat Qt_inv = arma::inv_sympd(Qt);
+    Qt_inv = arma::inv_sympd(Qt);
 
     if(!Qt_inv.is_symmetric()){
       Qt_inv = 0.5*Qt_inv + 0.5*arma::trans(Qt_inv);
     }
 
-    arma::dmat Qt_inv_sq = arma::sqrtmat_sympd(Qt_inv);
+    Qt_inv_sq = arma::sqrtmat_sympd(Qt_inv);
     if(i == 0){
       At = (delta_m * Ck_0 * delta_m) * arma::trans(F1t) * Qt_inv;
       et = yt.col(i) - F1t * mk_0;
@@ -144,11 +147,11 @@ Rcpp::List filter_smooth(arma::mat F1_fwd,
     int lbound = 0;
     int ubound = 0;
 
-    arma::dmat mnt(n_I2, n_t, arma::fill::zeros);
+    arma::mat mnt(n_I2, n_t, arma::fill::zeros);
     Rcpp::List Cnt(n_t);
-    arma::dmat F1(n_I, n_t, arma::fill::zeros);
-    arma::dmat yt(n_I, n_t, arma::fill::zeros);
-    arma::dmat F1_new(n_I, n_t, arma::fill::zeros);
+    arma::mat F1(n_I, n_t, arma::fill::zeros);
+    arma::mat yt(n_I, n_t, arma::fill::zeros);
+    arma::mat F1_new(n_I, n_t, arma::fill::zeros);
     arma::rowvec ll(delta_n);
     double ll_DIC = 0.0;
     double es_DIC = 0.0;
