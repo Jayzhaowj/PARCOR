@@ -9,6 +9,14 @@ get_sd <- function(sd, ts1, ts2, type) {
     .Call(`_PARCOR_get_sd`, sd, ts1, ts2, type)
 }
 
+cp_sd_nt <- function(phi, SIGMA, w) {
+    .Call(`_PARCOR_cp_sd_nt`, phi, SIGMA, w)
+}
+
+get_sd_nt <- function(sd, ts1, ts2) {
+    .Call(`_PARCOR_get_sd_nt`, sd, ts1, ts2)
+}
+
 cp_sd_uni <- function(phi, sigma2, w) {
     .Call(`_PARCOR_cp_sd_uni`, phi, sigma2, w)
 }
@@ -55,6 +63,14 @@ sample_tvar_coef <- function(phi_fwd, phi_bwd, Cnt_fwd, Cnt_bwd, n_I, P_opt, P_m
 
 run_dl <- function(phi_fwd, phi_bwd) {
     .Call(`_PARCOR_run_dl`, phi_fwd, phi_bwd)
+}
+
+run_whittle_nt <- function(phi_fwd, phi_bwd) {
+    .Call(`_PARCOR_run_whittle_nt`, phi_fwd, phi_bwd)
+}
+
+vi_shrinkNTVP <- function(y_fwd, y_bwd, d, e1, e2, c0, g0, G0, a_tau, learn_a_tau, iter_max, ind, epsilon, sample_size, b_tau) {
+    .Call(`_PARCOR_vi_shrinkNTVP`, y_fwd, y_bwd, d, e1, e2, c0, g0, G0, a_tau, learn_a_tau, iter_max, ind, epsilon, sample_size, b_tau)
 }
 
 vi_shrinkTVP <- function(y_fwd, y_bwd, d, d1, d2, e1, e2, a_xi, a_tau, learn_a_xi, learn_a_tau, iter_max, ind, S_0, epsilon, skip, sample_size, b_xi, b_tau) {

@@ -109,3 +109,36 @@ Rcpp::List run_dl(arma::cube phi_fwd, arma::cube phi_bwd){
   }
   return ar_coef;
 }
+
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+Rcpp::List run_whittle_nt(arma::cube phi_fwd,
+                          arma::cube phi_bwd){
+  int n_I = phi_fwd.n_cols;
+  int P = phi_fwd.n_slices;
+  arma::cube akm;
+  arma::cube dkm;
+  arma::cube akm_prev;
+  arma::cube dkm_prev;
+  Rcpp::List ar_coef_prev;
+  Rcpp::List ar_coef(P);
+  for(int i = 0; i < P; i++){
+    akm = arma::cube(n_I, n_I, i+1, arma::fill::zeros);
+    dkm = arma::cube(n_I, n_I, i+1, arma::fill::zeros);
+    akm.slice(i) = phi_fwd.slice(i);
+    dkm.slice(i) = phi_bwd.slice(i);
+    if(i > 0){
+      ar_coef_prev = ar_coef(i-1);
+      akm_prev = Rcpp::as<arma::cube>(ar_coef_prev["forward"]);
+      dkm_prev = Rcpp::as<arma::cube>(ar_coef_prev["backward"]);
+      for(int j = 0; j < i; j++){
+        akm.slice(j) = akm_prev.slice(j) - dkm_prev.slice(i-j-1)*akm.slice(i);
+        dkm.slice(j) = dkm_prev.slice(j) - akm_prev.slice(i-j-1)*dkm.slice(i);
+      }
+    }
+    ar_coef(i) = Rcpp::List::create(Rcpp::Named("forward") = akm,
+                                    Rcpp::Named("backward") = dkm);
+  }
+  return ar_coef;
+}

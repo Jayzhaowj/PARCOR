@@ -25,3 +25,11 @@ obtain_resid_var <- function(phi_chol_fwd, SIGMA, n_t, n_I, d){
   }
   return(St)
 }
+
+obtain_resid_var_nt <- function(phi_chol_fwd, SIGMA, n_I, d){
+  upper_tri <- diag(n_I)
+  upper_tri[upper.tri(upper_tri)] <- phi_chol_fwd[, d]
+  upper_tri_inv <- backsolve(upper_tri, diag(n_I), upper.tri = TRUE)
+  St <- t(upper_tri_inv) %*% diag(SIGMA[, d]) %*% upper_tri_inv
+  return(St)
+}

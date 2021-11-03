@@ -38,6 +38,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cp_sd_nt
+Rcpp::List cp_sd_nt(arma::cube phi, arma::mat SIGMA, arma::vec w);
+RcppExport SEXP _PARCOR_cp_sd_nt(SEXP phiSEXP, SEXP SIGMASEXP, SEXP wSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type SIGMA(SIGMASEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
+    rcpp_result_gen = Rcpp::wrap(cp_sd_nt(phi, SIGMA, w));
+    return rcpp_result_gen;
+END_RCPP
+}
+// get_sd_nt
+arma::mat get_sd_nt(Rcpp::List sd, int ts1, int ts2);
+RcppExport SEXP _PARCOR_get_sd_nt(SEXP sdSEXP, SEXP ts1SEXP, SEXP ts2SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type sd(sdSEXP);
+    Rcpp::traits::input_parameter< int >::type ts1(ts1SEXP);
+    Rcpp::traits::input_parameter< int >::type ts2(ts2SEXP);
+    rcpp_result_gen = Rcpp::wrap(get_sd_nt(sd, ts1, ts2));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cp_sd_uni
 arma::cube cp_sd_uni(arma::cube phi, arma::vec sigma2, arma::vec w);
 RcppExport SEXP _PARCOR_cp_sd_uni(SEXP phiSEXP, SEXP sigma2SEXP, SEXP wSEXP) {
@@ -284,6 +310,43 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// run_whittle_nt
+Rcpp::List run_whittle_nt(arma::cube phi_fwd, arma::cube phi_bwd);
+RcppExport SEXP _PARCOR_run_whittle_nt(SEXP phi_fwdSEXP, SEXP phi_bwdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type phi_fwd(phi_fwdSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type phi_bwd(phi_bwdSEXP);
+    rcpp_result_gen = Rcpp::wrap(run_whittle_nt(phi_fwd, phi_bwd));
+    return rcpp_result_gen;
+END_RCPP
+}
+// vi_shrinkNTVP
+List vi_shrinkNTVP(arma::mat y_fwd, arma::mat y_bwd, int d, double e1, double e2, double c0, double g0, double G0, double a_tau, bool learn_a_tau, int iter_max, bool ind, double epsilon, int sample_size, double b_tau);
+RcppExport SEXP _PARCOR_vi_shrinkNTVP(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP c0SEXP, SEXP g0SEXP, SEXP G0SEXP, SEXP a_tauSEXP, SEXP learn_a_tauSEXP, SEXP iter_maxSEXP, SEXP indSEXP, SEXP epsilonSEXP, SEXP sample_sizeSEXP, SEXP b_tauSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type y_fwd(y_fwdSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y_bwd(y_bwdSEXP);
+    Rcpp::traits::input_parameter< int >::type d(dSEXP);
+    Rcpp::traits::input_parameter< double >::type e1(e1SEXP);
+    Rcpp::traits::input_parameter< double >::type e2(e2SEXP);
+    Rcpp::traits::input_parameter< double >::type c0(c0SEXP);
+    Rcpp::traits::input_parameter< double >::type g0(g0SEXP);
+    Rcpp::traits::input_parameter< double >::type G0(G0SEXP);
+    Rcpp::traits::input_parameter< double >::type a_tau(a_tauSEXP);
+    Rcpp::traits::input_parameter< bool >::type learn_a_tau(learn_a_tauSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_max(iter_maxSEXP);
+    Rcpp::traits::input_parameter< bool >::type ind(indSEXP);
+    Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
+    Rcpp::traits::input_parameter< int >::type sample_size(sample_sizeSEXP);
+    Rcpp::traits::input_parameter< double >::type b_tau(b_tauSEXP);
+    rcpp_result_gen = Rcpp::wrap(vi_shrinkNTVP(y_fwd, y_bwd, d, e1, e2, c0, g0, G0, a_tau, learn_a_tau, iter_max, ind, epsilon, sample_size, b_tau));
+    return rcpp_result_gen;
+END_RCPP
+}
 // vi_shrinkTVP
 List vi_shrinkTVP(arma::mat y_fwd, arma::mat y_bwd, int d, double d1, double d2, double e1, double e2, double a_xi, double a_tau, bool learn_a_xi, bool learn_a_tau, int iter_max, bool ind, double S_0, double epsilon, bool skip, int sample_size, double b_xi, double b_tau);
 RcppExport SEXP _PARCOR_vi_shrinkTVP(SEXP y_fwdSEXP, SEXP y_bwdSEXP, SEXP dSEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP e1SEXP, SEXP e2SEXP, SEXP a_xiSEXP, SEXP a_tauSEXP, SEXP learn_a_xiSEXP, SEXP learn_a_tauSEXP, SEXP iter_maxSEXP, SEXP indSEXP, SEXP S_0SEXP, SEXP epsilonSEXP, SEXP skipSEXP, SEXP sample_sizeSEXP, SEXP b_xiSEXP, SEXP b_tauSEXP) {
@@ -317,6 +380,8 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_cp_sd", (DL_FUNC) &_PARCOR_cp_sd, 3},
     {"_PARCOR_get_sd", (DL_FUNC) &_PARCOR_get_sd, 4},
+    {"_PARCOR_cp_sd_nt", (DL_FUNC) &_PARCOR_cp_sd_nt, 3},
+    {"_PARCOR_get_sd_nt", (DL_FUNC) &_PARCOR_get_sd_nt, 3},
     {"_PARCOR_cp_sd_uni", (DL_FUNC) &_PARCOR_cp_sd_uni, 3},
     {"_PARCOR_compute_DIC_TVVAR", (DL_FUNC) &_PARCOR_compute_DIC_TVVAR, 4},
     {"_PARCOR_compute_spec", (DL_FUNC) &_PARCOR_compute_spec, 7},
@@ -329,6 +394,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_run_whittle", (DL_FUNC) &_PARCOR_run_whittle, 3},
     {"_PARCOR_sample_tvar_coef", (DL_FUNC) &_PARCOR_sample_tvar_coef, 8},
     {"_PARCOR_run_dl", (DL_FUNC) &_PARCOR_run_dl, 2},
+    {"_PARCOR_run_whittle_nt", (DL_FUNC) &_PARCOR_run_whittle_nt, 2},
+    {"_PARCOR_vi_shrinkNTVP", (DL_FUNC) &_PARCOR_vi_shrinkNTVP, 15},
     {"_PARCOR_vi_shrinkTVP", (DL_FUNC) &_PARCOR_vi_shrinkTVP, 19},
     {NULL, NULL, 0}
 };
