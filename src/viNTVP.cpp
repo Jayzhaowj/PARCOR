@@ -38,7 +38,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
   // Some index
   //int m = 1; // current stage
-  int N_m;
+  //int N_m;
   int n_1;     // index
   int n_T;     // index
 
@@ -254,12 +254,12 @@ List vi_shrinkNTVP(arma::mat y_fwd,
   while( !flag && (j < iter_max)){
     for(int m = start; m < d+1; m++){
       for(int k = 0; k < n_I; k++){
-        //Rcout << "Step 1" << "\n";
+        // Rcout << "Step 1" << "\n";
         // Forward
         // ----------------------------
         n_1 = m + 1;
         n_T = N;
-        N_m = n_T - n_1 + 1;
+        //N_m = n_T - n_1 + 1;
         y_tmp = yf.slice(m-1).col(k).rows(n_1-1, n_T-1);
         x_tmp = yb.slice(m-1).rows(n_1-m-1, n_T-m-1);
         if(!ind){
@@ -285,7 +285,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         sigma2_tmp = sigma2f_old(k, m-1);
         sigma2_inv_tmp = sigma2f_inv_old(k, m-1);
         C0_tmp = C0f_old(k, m-1);
-        //Rcout << "Step 2" << "\n";
+        // Rcout << "Step 2" << "\n";
         if(!ind){
           if( k == 1){
             beta_tmp = arma::vec(d_tmp, arma::fill::zeros);
@@ -310,9 +310,10 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
           }
         }
-        //Rcout << "Step 3" << "\n";
+        // Rcout << "Step 3" << "\n";
         // update beta mean
-        try {
+        // try {
+        // Rcout << "sigma2_inv_tmp: " << sigma2_inv_tmp << "\n";
           update_beta(beta_tmp, beta2_tmp, sigma2_beta_tmp,
                       y_tmp, x_tmp, sigma2_inv_tmp, tau2_inv_tmp);
           betaf_new.slice(m-1).col(k) = beta_tmp(arma::span(0, n_I-1));
@@ -325,19 +326,26 @@ List vi_shrinkNTVP(arma::mat y_fwd,
             }
           }
 
-        } catch(...){
-          Rcout << "beta problem " << "\n";
-          //beta_mean_tmp.fill(nanl(""));
-          //beta2_mean_tmp.fill(nanl(""));
-          if (succesful == true){
-            fail = "update forward beta & beta square";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
+        // } catch(...){
+        //   Rcout << "beta problem " << "\n";
+        //   //beta_mean_tmp.fill(nanl(""));
+        //   //beta2_mean_tmp.fill(nanl(""));
+        //   if (succesful == true){
+        //     fail = "update forward beta & beta square";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
 
         // update forward tau2
-        try {
+        // Rcout << "Step 4" << "\n";
+        // Rcout << "k: " << k << "\n";
+        // Rcout << "tau2_tmp: " << tau2_tmp << "\n";
+        // Rcout << "tau2_inv_tmp: " << tau2_inv_tmp << "\n";
+        // Rcout << "tau2_log_tmp: " << tau2_log_tmp << "\n";
+        // Rcout << "beta2_tmp: " << beta2_tmp << "\n";
+        // Rcout << "lambda2f_old(k): " << lambda2f_old(k) << "\n";
+        // try {
           update_local_shrink(tau2_tmp, tau2_inv_tmp, tau2_log_tmp,
                               beta2_tmp, lambda2f_old(k), a_tauf_old(k));
           tau2f_new.slice(m-1).col(k) = tau2_tmp(arma::span(0, n_I-1));
@@ -355,18 +363,22 @@ List vi_shrinkNTVP(arma::mat y_fwd,
               tau2f_log_chol_new.col(m-1).rows(index, index+k-1) = tau2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
-        } catch(...) {
-          //tau2_tmp.fill(nanl(""));
-          //tau2_inv_tmp.fill(nanl(""));
-          if (succesful == true){
-            fail = "update forward tau2, tau2_inv & tau2_log";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
-
-        // update forward variance sigma2
-        //Rcout << "Step 5" << "\n";
+        // } catch(...) {
+        //   //tau2_tmp.fill(nanl(""));
+        //   //tau2_inv_tmp.fill(nanl(""));
+        //   if (succesful == true){
+        //     fail = "update forward tau2, tau2_inv & tau2_log";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
+        // Rcout << "new tau2_tmp: " << tau2_tmp << "\n";
+        // Rcout << "new tau2_inv_tmp: " << tau2_inv_tmp << "\n";
+        // Rcout << "new tau2_log_tmp: " << tau2_log_tmp << "\n";
+        // Rcout << "new beta2_tmp: " << beta2_tmp << "\n";
+        // Rcout << "lambda2f_old(k): " << lambda2f_old(k) << "\n";
+        // // update forward variance sigma2
+        // Rcout << "Step 5" << "\n";
         try{
           update_sigma2(beta_tmp, sigma2_beta_tmp, y_tmp, x_tmp, sigma2_tmp, sigma2_inv_tmp, c0, C0_tmp);
           sigma2f_new(k, m-1) = sigma2_tmp;
@@ -381,7 +393,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
 
         // update forward C0
-        //Rcout << "Step 6" << "\n";
+        // Rcout << "Step 6" << "\n";
         try{
           update_C0(C0_tmp, sigma2_inv_tmp, c0, g0, G0);
           C0f_new(k, m-1) = C0_tmp;
@@ -398,10 +410,10 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
         // Backward
         // --------------------------------
-        //Rcout << "Step 7" << "\n";
+        // Rcout << "Step 7" << "\n";
         n_1 = 1;          // backward index
         n_T = N - m;      // backward index
-        N_m = n_T - n_1 + 1;
+        //N_m = n_T - n_1 + 1;
 
         y_tmp = yb.slice(m-1).col(k).rows(n_1-1, n_T-1);
         x_tmp = yf.slice(m-1).rows(n_1+m-1, n_T+m-1);
@@ -426,7 +438,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         sigma2_tmp = sigma2b_old(k, m-1);
         sigma2_inv_tmp = sigma2b_inv_old(k, m-1);
         C0_tmp = C0b_old(k, m-1);
-        //Rcout << "Step 8" << "\n";
+        // Rcout << "Step 8" << "\n";
         if(!ind){
           if( k == 1){
             beta_tmp = arma::vec(d_tmp, arma::fill::zeros);
@@ -451,9 +463,10 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         }
 
 
-        //Rcout << "Step 9" << "\n";
+        // Rcout << "Step 9" << "\n";
         // update beta mean
-        try {
+
+        // try {
           update_beta(beta_tmp, beta2_tmp, sigma2_beta_tmp,
                       y_tmp, x_tmp, sigma2_inv_tmp, tau2_inv_tmp);
           betab_new.slice(m-1).col(k) = beta_tmp(arma::span(0, n_I-1));
@@ -465,21 +478,21 @@ List vi_shrinkNTVP(arma::mat y_fwd,
               betab_chol_new.col(m-1).rows(index, index+k-1) = beta_tmp(arma::span(n_I, d_tmp-1));
             }
           }
-        } catch(...){
-          //beta_mean_tmp.fill(nanl(""));
-          //beta2_mean_tmp.fill(nanl(""));
-          if (succesful == true){
-            fail = "update backward beta & beta square";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
+        // } catch(...){
+        //   //beta_mean_tmp.fill(nanl(""));
+        //   //beta2_mean_tmp.fill(nanl(""));
+        //   if (succesful == true){
+        //     fail = "update backward beta & beta square";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
 
 
         //
         // update backward tau2
-        //Rcout << "Step 10" << "\n";
-        try {
+        // Rcout << "Step 10" << "\n";
+        // try {
           update_local_shrink(tau2_tmp, tau2_inv_tmp, tau2_log_tmp, beta2_tmp, lambda2b_old(k), a_taub_old(k));
           tau2b_new.slice(m-1).col(k) = tau2_tmp(arma::span(0, n_I-1));
           tau2b_inv_new.slice(m-1).col(k) = tau2_inv_tmp(arma::span(0, n_I-1));
@@ -496,18 +509,18 @@ List vi_shrinkNTVP(arma::mat y_fwd,
               tau2b_log_chol_new.col(m-1).rows(index, index+k-1) = tau2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
-        } catch(...) {
-          //tau2_tmp.fill(nanl(""));
-          //tau2_inv_tmp.fill(nanl(""));
-          if (succesful == true){
-            fail = "update backward tau2, tau2_inv & tau2_log";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
+        // } catch(...) {
+        //   //tau2_tmp.fill(nanl(""));
+        //   //tau2_inv_tmp.fill(nanl(""));
+        //   if (succesful == true){
+        //     fail = "update backward tau2, tau2_inv & tau2_log";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
 
 
-        //Rcout << "Step 11" << "\n";
+        // Rcout << "Step 11" << "\n";
         // update backward variance sigma2
         try{
           update_sigma2(beta_tmp, sigma2_beta_tmp, y_tmp, x_tmp, sigma2_tmp, sigma2_inv_tmp, c0, C0_tmp);
@@ -560,10 +573,10 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         }
       }
     }
-    //Rcout << "Step 14" << "\n";
+    // Rcout << "Step 14" << "\n";
     //Rcout << "forward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      //try {
         tau2_tmp = arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -576,19 +589,27 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         update_global_shrink(tau2_tmp,lambda2_tmp, lambda2_log_tmp, a_tauf_old(k), e1, e2);
         lambda2f_new(k) = lambda2_tmp;
         lambda2f_log_new(k) = lambda2_log_tmp;
-      } catch (...) {
-        //lambda2f_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update forward lambda2 & lambda2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!lambda2f_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "lambda2f_new: " << lambda2f_new(k) << "\n";
+          Rcout << "tau2_tmp: " << tau2_tmp << "\n";
+          Rcout << "mean(tau2_tmp): " << mean(tau2_tmp) << "\n";
+          Rcout << "lambda2f_log_new" << lambda2f_log_new(k) << "\n";
+          stop("lambda2f has inifnite values");
         }
-      }
+      // } catch (...) {
+      //   //lambda2f_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update forward lambda2 & lambda2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
-    //Rcout << "Step 15" << "\n";
+    // Rcout << "Step 15" << "\n";
     //Rcout << "backward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      // try {
         tau2_tmp = arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -601,20 +622,28 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         update_global_shrink(tau2_tmp, lambda2_tmp, lambda2_log_tmp, a_taub_old(k), e1, e2);
         lambda2b_new(k) = lambda2_tmp;
         lambda2b_log_new(k) = lambda2_log_tmp;
-      } catch (...) {
-        //lambda2b_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update backward lambda2 & lambda2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!lambda2b_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "lambda2b_new: " << lambda2b_new(k) << "\n";
+          Rcout << "tau2_tmp: " << tau2_tmp << "\n";
+          Rcout << "mean(tau2_tmp): " << mean(tau2_tmp) << "\n";
+          Rcout << "lambda2b_log_new" << lambda2b_log_new(k) << "\n";
+          stop("lambda2f has inifnite values");
         }
-      }
+      // } catch (...) {
+      //   //lambda2b_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update backward lambda2 & lambda2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
-    //Rcout << "Step 16" << "\n";
+    // Rcout << "Step 16" << "\n";
     if(learn_a_tau){
       // Rcout << "forward a_tau" << "\n";
       for(int k = 0; k < n_I; k++){
-        try{
+        // try{
           tau2_tmp = arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
           tau2_log_tmp = arma::vectorise(tau2f_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
           if(!ind){
@@ -628,17 +657,26 @@ List vi_shrinkNTVP(arma::mat y_fwd,
             }
           }
           a_tauf_new(k) = DG_approx(tau2_tmp, tau2_log_tmp, lambda2f_new(k), lambda2f_log_new(k), b_tau, sample_size);
-        }catch (...){
-          if (succesful == true){
-            fail = "update forward a_tau";
-            fail_iter = j + 1;
-            succesful = false;
+          if(!a_tauf_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_tauf_new: " << a_tauf_new(k) << "\n";
+            Rcout << "sum tau2_tmp: " << arma::sum(tau2_tmp) << "\n";
+            Rcout << "sum tau2_log_tmp: " << arma::sum(tau2_log_tmp) << "\n";
+            Rcout << "lambda2f_new(k): " << lambda2f_new(k) << "\n";
+            Rcout << "lambda2f_log_new(k): " << lambda2f_log_new(k) << "\n";
+            stop("a_tauf_new has non-finite elements");
           }
-        }
+        // }catch (...){
+        //   if (succesful == true){
+        //     fail = "update forward a_tau";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
       }
       // Rcout << "backward a_tau" << "\n";
       for(int k = 0; k < n_I; k++){
-        try{
+        // try{
           tau2_tmp = arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
           tau2_log_tmp = arma::vectorise(tau2b_log_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
           if(!ind){
@@ -652,13 +690,22 @@ List vi_shrinkNTVP(arma::mat y_fwd,
             }
           }
           a_taub_new(k) = DG_approx(tau2_tmp, tau2_log_tmp, lambda2b_new(k), lambda2b_log_new(k), b_tau, sample_size);
-        }catch (...){
-          if (succesful == true){
-            fail = "update backward a_tau";
-            fail_iter = j + 1;
-            succesful = false;
+          if(!a_taub_new.is_finite()){
+            Rcout << "k: " << k << "\n";
+            Rcout << "a_taub_new: " << a_taub_new(k) << "\n";
+            Rcout << "backward sum tau2_tmp: " << arma::sum(tau2_tmp) << "\n";
+            Rcout << "backward sum tau2_log_tmp: " << arma::sum(tau2_log_tmp) << "\n";
+            Rcout << "lambda2b_new(k): " << lambda2b_new(k) << "\n";
+            Rcout << "lambda2b_log_new(k): " << lambda2b_log_new(k) << "\n";
+            stop("a_tauf_new has non-finite elements");
           }
-        }
+        // }catch (...){
+        //   if (succesful == true){
+        //     fail = "update backward a_tau";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
       }
     }
     //Rcout << "Step 17" << "\n";
@@ -666,6 +713,8 @@ List vi_shrinkNTVP(arma::mat y_fwd,
     // update old state of sigma2
     sigma2f_old = sigma2f_new;
     sigma2b_old = sigma2b_new;
+    sigma2f_inv_old = sigma2f_inv_new;
+    sigma2b_inv_old = sigma2b_inv_new;
 
     // update old state of C0
     C0f_old = C0f_new;

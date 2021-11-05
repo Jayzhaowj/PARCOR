@@ -17,9 +17,10 @@ void update_beta_mean(arma::vec& beta_mean,
   arma::mat x_tilde = x % beta_nc;
   arma::vec sigma2_beta_mean(d);
   arma::mat part1 = x_tilde * theta_sr;
-  arma::mat part2 = x * beta_mean;
+  arma::mat part2;
   arma::mat tmp;
   for(int i = 0; i < d; i++){
+    part2 = x * beta_mean;
     sigma2_beta_mean(i) = 1.0/arma::as_scalar(arma::sum(sigma2_inv%arma::square(x.col(i))) + tau2_inv(i));
     tmp = (y - part2 - part1 + x.col(i) * beta_mean(i));
     beta_mean(i) = arma::as_scalar(sigma2_beta_mean(i) * (arma::sum(sigma2_inv % (tmp % x.col(i)))));
@@ -74,15 +75,18 @@ void update_beta(arma::vec& beta,
                  const arma::vec& tau2_inv){
   // beta_nc dimension: N * d
   int d = x.n_cols;
-  int n_t = x.n_rows;
-  arma::vec sigma2t_inv(n_t, arma::fill::ones);
-  sigma2t_inv.fill(sigma2_inv);
-  arma::mat part2 = x * beta;
+  // int n_t = x.n_rows;
+  //arma::vec sigma2t_inv(n_t, arma::fill::ones);
+  //sigma2t_inv.fill(sigma2_inv);
+  arma::mat part2;
   arma::mat tmp;
   for(int i = 0; i < d; i++){
-    sigma2_beta(i) = 1.0/arma::as_scalar(arma::sum(sigma2t_inv%arma::square(x.col(i))) + tau2_inv(i));
+    part2 = x * beta;
+    //sigma2_beta(i) = 1.0/arma::as_scalar(arma::sum(sigma2t_inv%arma::square(x.col(i))) + tau2_inv(i));
+    sigma2_beta(i) = 1.0/arma::as_scalar(sigma2_inv*arma::sum(arma::square(x.col(i))) + tau2_inv(i));
     tmp = y - part2 + x.col(i) * beta(i);
-    beta(i) = arma::as_scalar(sigma2_beta(i) * (arma::sum(sigma2t_inv % (tmp % x.col(i)))));
+    //beta(i) = arma::as_scalar(sigma2_beta(i) * (arma::sum(sigma2t_inv % (tmp % x.col(i)))));
+    beta(i) = arma::as_scalar(sigma2_beta(i) * (sigma2_inv * arma::sum((tmp % x.col(i)))));
     beta2(i) = arma::as_scalar(sigma2_beta(i)) + arma::as_scalar(beta(i)*beta(i));
   }
   //std::for_each(beta_mean.begin(), beta_mean.end(), res_protector);
@@ -102,6 +106,7 @@ void update_sigma2(arma::vec& beta, arma::vec& sigma2_beta,
   for(int i = 0; i < n_t; i++){
     tmp += y2(i) + arma::as_scalar(x2.row(i)*sigma2_beta) + arma::as_scalar(arma::square(x.row(i)*beta)) - 2*y(i)*arma::as_scalar(x.row(i)*beta);
   }
+
   par_beta = tmp/2.0 + C0;
   sigma2 = par_beta/(par_alpha + 1);
   sigma2_inv = par_alpha/par_beta;

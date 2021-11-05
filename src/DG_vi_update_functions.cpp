@@ -59,4 +59,5 @@ void update_global_shrink(const arma::vec& prior_var,
   double hyper2_full = hyper2 + arma::mean(prior_var) * a * d * 0.5;
   global_shrink = hyper1_full/hyper2_full;
   global_shrink_log = boost::math::digamma(hyper1_full) - std::log(hyper2_full);
+
 }
