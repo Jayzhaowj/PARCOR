@@ -202,6 +202,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
   // definition temp upper triangular
   arma::mat tmp_upper_triangular;
+  arma::mat Identity_matrix(n_I, n_I, arma::fill::eye);
   arma::mat tmp_beta;
   arma::uvec upper_indices;
   arma::uvec all_indices;
@@ -561,7 +562,8 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         tmp_upper_triangular.elem(upper_indices) = arma::trans(betaf_chol_new.col(m-1));
 
         for(int i = n_1-1; i < n_T; i++){
-          yf.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yf.slice(m).row(i)));
+          //yf.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yf.slice(m).row(i)));
+          yf.slice(m).row(i) = yf.slice(m).row(i) * arma::solve(tmp_upper_triangular, Identity_matrix);
         }
         //backward part
         n_1 = 1;          // backward index
@@ -569,7 +571,8 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
         tmp_upper_triangular.elem(upper_indices) = arma::trans(betab_chol_new.col(m-1));
         for(int i = n_1-1; i < n_T; i++){
-          yb.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yb.slice(m).row(i)));
+          //yb.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yb.slice(m).row(i)));
+          yb.slice(m).row(i) = yb.slice(m).row(i) * arma::solve(tmp_upper_triangular, Identity_matrix);
         }
       }
     }
@@ -755,11 +758,13 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         // forward part
         tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
         tmp_upper_triangular.elem(upper_indices) = betaf_chol_new.col(m);
-        betaf_new.slice(m) = betaf_new.slice(m)*arma::inv(tmp_upper_triangular);
+        //betaf_new.slice(m) = betaf_new.slice(m)*arma::inv(tmp_upper_triangular);
+        betaf_new.slice(m) = betaf_new.slice(m)*arma::solve(tmp_upper_triangular, Identity_matrix);
         // backward part
         tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
         tmp_upper_triangular.elem(upper_indices) = betab_chol_new.col(m);
-        betab_new.slice(m) = betab_new.slice(m)*arma::inv(tmp_upper_triangular);
+        //betab_new.slice(m) = betab_new.slice(m)*arma::inv(tmp_upper_triangular);
+        betab_new.slice(m) = betab_new.slice(m)*arma::solve(tmp_upper_triangular, Identity_matrix);
       }
       //diff(counts) = compute_norm_matrix(betaf_new.slice(m).rows(d, N-d-1), betaf_old.slice(m).rows(d, N-d-1));
       diff(counts) = arma::norm(betaf_new.slice(m)-betaf_old.slice(m), 2);
