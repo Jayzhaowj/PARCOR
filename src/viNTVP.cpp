@@ -202,6 +202,7 @@ List vi_shrinkNTVP(arma::mat y_fwd,
 
   // definition temp upper triangular
   arma::mat tmp_upper_triangular;
+  arma::mat tmp_upper_triangular_inv;
   arma::mat Identity_matrix(n_I, n_I, arma::fill::eye);
   arma::mat tmp_beta;
   arma::uvec upper_indices;
@@ -560,16 +561,36 @@ List vi_shrinkNTVP(arma::mat y_fwd,
         n_T = N;
         tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
         tmp_upper_triangular.elem(upper_indices) = arma::trans(betaf_chol_new.col(m-1));
-
+        if(arma::rcond(tmp_upper_triangular) < 1e-36){
+          Rcout << "current m: " << m << "\n";
+          Rcout << "min betaf_chol_new: " << arma::min(betaf_chol_new.col(m-1)) << "\n";
+          Rcout << "max betaf_chol_new: " << arma::max(betaf_chol_new.col(m-1)) << "\n";
+          Rcout << "mean betaf_chol_new: " << arma::mean(betaf_chol_new.col(m-1)) << "\n";
+          Rcout << "min tau2f_chol_new: " << arma::min(tau2f_chol_new.col(m-1)) << "\n";
+          Rcout << "max tau2f_chol_new: " << arma::max(tau2f_chol_new.col(m-1)) << "\n";
+          Rcout << "mean tau2f_chol_new: " << arma::mean(tau2f_chol_new.col(m-1)) << "\n";
+          stop("We have ill-conditioned forward upper_triangular");
+        }
+        tmp_upper_triangular_inv = arma::solve(tmp_upper_triangular, Identity_matrix);
         for(int i = n_1-1; i < n_T; i++){
           //yf.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yf.slice(m).row(i)));
-          yf.slice(m).row(i) = yf.slice(m).row(i) * arma::solve(tmp_upper_triangular, Identity_matrix);
+          yf.slice(m).row(i) = yf.slice(m).row(i) * tmp_upper_triangular_inv;
         }
         //backward part
         n_1 = 1;          // backward index
         n_T = N - m;      // backward index
         tmp_upper_triangular = arma::mat(n_I, n_I, arma::fill::eye);
         tmp_upper_triangular.elem(upper_indices) = arma::trans(betab_chol_new.col(m-1));
+        if(arma::rcond(tmp_upper_triangular) < 1e-36){
+          Rcout << "current m: " << m << "\n";
+          Rcout << "min betab_chol_new: " << arma::min(betab_chol_new.col(m-1)) << "\n";
+          Rcout << "max betab_chol_new: " << arma::max(betab_chol_new.col(m-1)) << "\n";
+          Rcout << "mean betab_chol_new: " << arma::mean(betab_chol_new.col(m-1)) << "\n";
+          Rcout << "min tau2b_chol_new: " << arma::min(tau2b_chol_new.col(m-1)) << "\n";
+          Rcout << "max tau2b_chol_new: " << arma::max(tau2b_chol_new.col(m-1)) << "\n";
+          Rcout << "mean tau2b_chol_new: " << arma::mean(tau2b_chol_new.col(m-1)) << "\n";
+          stop("We have ill-conditioned backward upper_triangular");
+        }
         for(int i = n_1-1; i < n_T; i++){
           //yb.slice(m).row(i) = arma::trans(arma::inv(tmp_upper_triangular.t())*arma::trans(yb.slice(m).row(i)));
           yb.slice(m).row(i) = yb.slice(m).row(i) * arma::solve(tmp_upper_triangular, Identity_matrix);
