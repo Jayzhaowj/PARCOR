@@ -128,7 +128,7 @@ Rcpp::List cp_sd_dcoh(arma::cube phi, arma::cube SIGMA, arma::vec w){
         sd1(i) = PHI_all;
         sd2(i) = PHI_inv_all;
     }
-    return Rcpp::List::create(Rcpp::Named("PHI") = PHI_all, Rcpp::Named("PHI_inv") = PHI_inv_all);
+    return Rcpp::List::create(Rcpp::Named("PHI") = sd1, Rcpp::Named("PHI_inv") = sd2);
 }
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
