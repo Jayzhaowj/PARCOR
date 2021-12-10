@@ -24,6 +24,19 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cp_sd_dcoh
+Rcpp::List cp_sd_dcoh(arma::cube phi, arma::cube SIGMA, arma::vec w);
+RcppExport SEXP _PARCOR_cp_sd_dcoh(SEXP phiSEXP, SEXP SIGMASEXP, SEXP wSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::cube >::type phi(phiSEXP);
+    Rcpp::traits::input_parameter< arma::cube >::type SIGMA(SIGMASEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w(wSEXP);
+    rcpp_result_gen = Rcpp::wrap(cp_sd_dcoh(phi, SIGMA, w));
+    return rcpp_result_gen;
+END_RCPP
+}
 // get_sd
 arma::mat get_sd(Rcpp::List sd, int ts1, int ts2, int type);
 RcppExport SEXP _PARCOR_get_sd(SEXP sdSEXP, SEXP ts1SEXP, SEXP ts2SEXP, SEXP typeSEXP) {
@@ -379,6 +392,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_PARCOR_cp_sd", (DL_FUNC) &_PARCOR_cp_sd, 3},
+    {"_PARCOR_cp_sd_dcoh", (DL_FUNC) &_PARCOR_cp_sd_dcoh, 3},
     {"_PARCOR_get_sd", (DL_FUNC) &_PARCOR_get_sd, 4},
     {"_PARCOR_cp_sd_nt", (DL_FUNC) &_PARCOR_cp_sd_nt, 3},
     {"_PARCOR_get_sd_nt", (DL_FUNC) &_PARCOR_get_sd_nt, 3},

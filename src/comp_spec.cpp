@@ -74,6 +74,62 @@ Rcpp::List cp_sd(arma::cube phi, arma::cube SIGMA, arma::vec w){
                               Rcpp::Named("DTF") = sd3);
 }
 
+
+// [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::export]]
+
+Rcpp::List cp_sd_dcoh(arma::cube phi, arma::cube SIGMA, arma::vec w){
+    // phi is ar coefficient in array type;
+    // SIGMA is innovation variance in matrix type;
+    // w is the frequency band in vector type;
+    // ch1 and ch2 is the index number of time series;
+    int n_I = SIGMA.n_cols; // n_I is the number of time series;
+    int P = phi.n_slices; // P is the optimizied model order;
+    int n_t = phi.n_cols; // the number of time points;
+    int n_w = w.n_elem; // the number of frequency points;
+
+    // the variable storing all the information
+    Rcpp::List sd1(n_t); // store the spectral density w/w.o time
+    Rcpp::List sd2(n_t); // store partial directed coherence w/w.o time
+    //Rcpp::List sd3(n_t); // store directed transfer function
+    //arma::cx_cube f_spec(n_I, n_I, n_w, arma::fill::zeros);
+    arma::cx_cube PHI_all(n_I, n_I, n_w, arma::fill::zeros);
+    arma::cx_cube PHI_inv_all(n_I, n_I, n_w, arma::fill::zeros);
+
+    // temperaroy variable;
+    arma::cx_mat PHI(n_I, n_I, arma::fill::eye);
+    arma::vec temp;
+    arma::mat temp_phi;
+    arma::cx_mat PHI_inv(n_I, n_I);
+    arma::cx_mat PHI_conj_inv(n_I, n_I);
+
+
+
+    // some constants
+    std::complex<double> ii(0, -2*M_PI);
+    std::complex<double> exp_part;
+
+    for(int i = 0; i < n_t; i++){
+        for(int j = 0; j < n_w; j++){
+            PHI.eye();
+            for(int k = 0; k < P; k++){
+                exp_part = std::exp(std::operator*(ii, (k+1)*w(j)));
+                temp = phi(arma::span::all, arma::span(i), arma::span(k));
+                temp_phi = arma::conv_to<arma::mat>::from(temp);
+                temp_phi.reshape(n_I, n_I);
+                PHI = PHI - exp_part*arma::trans(temp_phi);
+            }
+            PHI_inv = arma::inv(PHI);
+            //partial directed coherence
+            PHI_all.slice(j) = PHI;
+            PHI_inv_all.slice(j) = PHI_inv;
+
+        }
+        sd1(i) = PHI_all;
+        sd2(i) = PHI_inv_all;
+    }
+    return Rcpp::List::create(Rcpp::Named("PHI") = PHI_all, Rcpp::Named("PHI_inv") = PHI_inv_all);
+}
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 arma::mat get_sd(Rcpp::List sd, int ts1, int ts2, int type){

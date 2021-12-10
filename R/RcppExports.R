@@ -5,6 +5,10 @@ cp_sd <- function(phi, SIGMA, w) {
     .Call(`_PARCOR_cp_sd`, phi, SIGMA, w)
 }
 
+cp_sd_dcoh <- function(phi, SIGMA, w) {
+    .Call(`_PARCOR_cp_sd_dcoh`, phi, SIGMA, w)
+}
+
 get_sd <- function(sd, ts1, ts2, type) {
     .Call(`_PARCOR_get_sd`, sd, ts1, ts2, type)
 }
