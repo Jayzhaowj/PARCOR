@@ -638,7 +638,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
 
         // update forward xi2
         //Rcout << "forward xi" << "\n";
-        try {
+        // try {
           update_local_shrink(xi2_tmp, xi2_inv_tmp, xi2_log_tmp,
                               theta_tmp, kappa2f_old(k), a_xif_old(k));
           xi2f_new.slice(m-1).col(k) = xi2_tmp(arma::span(0, n_I-1));
@@ -656,14 +656,14 @@ List vi_shrinkTVP(arma::mat y_fwd,
               xi2f_log_chol_new.col(m-1).rows(index, index+k-1) = xi2_log_tmp(arma::span(n_I, d_tmp-1));
             }
           }
-        } catch(...) {
-          //xi2_tmp.fill(nanl(""));
-          if (succesful == true){
-            fail = "update forward xi2, xi2_inv & xi2_log";
-            fail_iter = j + 1;
-            succesful = false;
-          }
-        }
+        // } catch(...) {
+        //   //xi2_tmp.fill(nanl(""));
+        //   if (succesful == true){
+        //     fail = "update forward xi2, xi2_inv & xi2_log";
+        //     fail_iter = j + 1;
+        //     succesful = false;
+        //   }
+        // }
 
         // update forward prediction error
         update_prediction_error(y_tmp, x_tmp, beta_nc_tmp, theta_sr_tmp, beta_mean_tmp, N_m);

@@ -36,6 +36,13 @@ void update_local_shrink(arma::vec& local_shrink,
     //  local_shrink_inv(j) = std::exp(0.5*std::log(p2) + term2 - term3 - 0.5 * std::log(p3)) - term1;
     //}else{
     local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
+    if(!local_shrink.is_finite()){
+      Rcout << "j: " << j << "\n";
+      Rcout << "local_shrink: " << local_shrink(j) << "\n";
+      Rcout << "p2: " << p2;
+      Rcout << "p3: " << p3;
+
+    }
     local_shrink_inv(j) = std::sqrt(p2)*boost::math::cyl_bessel_k(p1+1, part1)/(std::sqrt(p3)*boost::math::cyl_bessel_k(p1, part1)) - 2*p1/p3;
     local_shrink_log(j) = Egig_log(p1, p2, p3);
     //}
