@@ -908,7 +908,7 @@ List vi_shrinkTVP(arma::mat y_fwd,
     // update forward kappa2 and lambda2
     //Rcout << "forward kappa2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      // try {
         xi2_tmp = arma::vectorise(xi2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -921,18 +921,27 @@ List vi_shrinkTVP(arma::mat y_fwd,
         update_global_shrink(xi2_tmp, kappa2_tmp, kappa2_log_tmp, a_xif_old(k), d1, d2);
         kappa2f_new(k) = kappa2_tmp;
         kappa2f_log_new(k) = kappa2_log_tmp;
-      } catch (...) {
-        //kappa2f_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update forward kappa2 & kappa2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!kappa2f_new.is_finite() | !kappa2f_log_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "a_xif_old: " << a_xif_old(k) << "\n";
+          Rcout << "xi2_tmp: " << xi2_tmp << "\n";
+          Rcout << "xi2_log_tmp: " << xi2_log_tmp << "\n";
+          Rcout << "kappa2f_new(k): " << kappa2f_new(k) << "\n";
+          Rcout << "kappa2f_log_new(k): " << kappa2f_log_new(k) << "\n";
+          stop("kappa2f_new or kappa2f_log_new has non-finite elements");
         }
-      }
+      // } catch (...) {
+      //   //kappa2f_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update forward kappa2 & kappa2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
     //Rcout << "forward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      // try {
         tau2_tmp = arma::vectorise(tau2f_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -945,20 +954,29 @@ List vi_shrinkTVP(arma::mat y_fwd,
         update_global_shrink(tau2_tmp,lambda2_tmp, lambda2_log_tmp, a_tauf_old(k), e1, e2);
         lambda2f_new(k) = lambda2_tmp;
         lambda2f_log_new(k) = lambda2_log_tmp;
-      } catch (...) {
-        //lambda2f_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update forward lambda2 & lambda2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!lambda2f_new.is_finite() | !lambda2f_log_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "a_tauf_old: " << a_tauf_old(k) << "\n";
+          Rcout << "tau2_tmp: " << tau2_tmp << "\n";
+          Rcout << "tau2_log_tmp: " << tau2_log_tmp << "\n";
+          Rcout << "lambda2f_new(k): " << lambda2f_new(k) << "\n";
+          Rcout << "lambda2f_log_new(k): " << lambda2f_log_new(k) << "\n";
+          stop("lambda2f_new or lambda2f_log_new has non-finite elements");
         }
-      }
+      // } catch (...) {
+      //   //lambda2f_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update forward lambda2 & lambda2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
 
     // sample backward kappa2 and lambda2
     //Rcout << "backward kappa2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      // try {
         xi2_tmp = arma::vectorise(xi2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -971,18 +989,27 @@ List vi_shrinkTVP(arma::mat y_fwd,
         update_global_shrink(xi2_tmp, kappa2_tmp, kappa2_log_tmp, a_xib_old(k), d1, d2);
         kappa2b_new(k) = kappa2_tmp;
         kappa2b_log_new(k) = kappa2_log_tmp;
-      } catch (...) {
-        //kappa2b_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update backward kappa2 & kappa2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!kappa2b_new.is_finite() | !kappa2b_log_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "a_xib_old: " << a_xib_old(k) << "\n";
+          Rcout << "xi2_tmp: " << xi2_tmp << "\n";
+          Rcout << "xi2_log_tmp: " << xi2_log_tmp << "\n";
+          Rcout << "kappa2b_new(k): " << kappa2b_new(k) << "\n";
+          Rcout << "lambda2b_log_new(k): " << kappa2b_log_new(k) << "\n";
+          stop("kappa2b_new or kappa2b_log_new has non-finite elements");
         }
-      }
+      // } catch (...) {
+      //   //kappa2b_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update backward kappa2 & kappa2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
     //Rcout << "backward lambda2" << "\n";
     for(int k = 0; k < n_I; k++){
-      try {
+      // try {
         tau2_tmp = arma::vectorise(tau2b_new(arma::span(0, n_I-1), arma::span(k, k), arma::span(start-1, d-1)));
         if(!ind){
           if(k == 1){
@@ -995,14 +1022,23 @@ List vi_shrinkTVP(arma::mat y_fwd,
         update_global_shrink(tau2_tmp, lambda2_tmp, lambda2_log_tmp, a_taub_old(k), e1, e2);
         lambda2b_new(k) = lambda2_tmp;
         lambda2b_log_new(k) = lambda2_log_tmp;
-      } catch (...) {
-        //lambda2b_new(k) = arma::datum::nan;
-        if (succesful == true){
-          fail = "update backward lambda2 & lambda2_log";
-          fail_iter = j + 1;
-          succesful = false;
+        if(!lambda2b_new.is_finite() | !lambda2b_log_new.is_finite()){
+          Rcout << "k: " << k << "\n";
+          Rcout << "a_taub_old: " << a_taub_old(k) << "\n";
+          Rcout << "tau2_tmp: " << tau2_tmp << "\n";
+          Rcout << "tau2_log_tmp: " << tau2_log_tmp << "\n";
+          Rcout << "lambda2b_new(k): " << lambda2b_new(k) << "\n";
+          Rcout << "lambda2b_log_new(k): " << lambda2b_log_new(k) << "\n";
+          stop("lambda2b_new or lambda2b_log_new has non-finite elements");
         }
-      }
+      // } catch (...) {
+      //   //lambda2b_new(k) = arma::datum::nan;
+      //   if (succesful == true){
+      //     fail = "update backward lambda2 & lambda2_log";
+      //     fail_iter = j + 1;
+      //     succesful = false;
+      //   }
+      // }
     }
 
 
