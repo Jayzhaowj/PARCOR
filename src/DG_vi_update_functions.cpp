@@ -39,7 +39,7 @@ void update_local_shrink(arma::vec& local_shrink,
     if(!local_shrink.is_finite()){
       Rcout << "j: " << j << "\n";
       Rcout << "local_shrink: " << local_shrink(j) << "\n";
-      Rcout << "all local_shrink: " << "\n";
+      Rcout << "all local_shrink: " << local_shrink << "\n";
       Rcout << "p2: " << p2 << "\n";
       Rcout << "p3: " << param_vec2 << "\n";
 
