@@ -53,7 +53,8 @@ void update_theta_sr(arma::vec& beta_mean,
   arma::mat tmp;
   for(int i = 0; i < d; i++){
     sigma2_theta_sr_mean(i) = 1.0/arma::as_scalar(arma::sum(sigma2_inv%x2_tilde.col(i)) + xi2_inv(i));
-    part1 = x % beta_cov_nc.slice(i) * theta_sr;
+    // part1 = x % beta_cov_nc.slice(i) * theta_sr;
+    part1 = x % beta_cov_nc.slice(i) * theta_sr - x.col(i) % beta_cov_nc.slice(i).col(i) * theta_sr(i);
     tmp = y % beta_nc.col(i) - beta_nc.col(i) % part2 - part1;
     theta_sr(i) = arma::as_scalar(sigma2_theta_sr_mean(i) * (arma::sum(sigma2_inv % (tmp % x.col(i)))));
     theta(i) = arma::as_scalar(sigma2_theta_sr_mean(i)) + arma::as_scalar(theta_sr(i)*theta_sr(i));
