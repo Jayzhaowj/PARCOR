@@ -7,6 +7,7 @@
 #include "sample_parameters.h"
 #include "Egig_log_is.h"
 #include <iostream>
+#include <shrinkTVP.h>
 using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -25,6 +26,8 @@ void update_local_shrink(arma::vec& local_shrink,
   //double term1;
   //double term2;
   //double term3;
+  double besselKvalue1;
+  double besselKvalue2;
   for (int j = 0; j < d; j++){
     double p3 = param_vec2(j);
     double part1 = std::sqrt(p2 * p3);
@@ -35,7 +38,15 @@ void update_local_shrink(arma::vec& local_shrink,
     //  local_shrink(j) = std::exp(0.5 * std::log(p3) + term2 - term3 - 0.5 * std::log(p2));
     //  local_shrink_inv(j) = std::exp(0.5*std::log(p2) + term2 - term3 - 0.5 * std::log(p3)) - term1;
     //}else{
-    local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
+    //local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
+    if(p1+1 < 50 and part1 < 50){
+      besselKvalue1 = R::bessel_k(part1, p1+1, true);
+      besselKvalue2 = R::bessel_k(part1, p1, true);
+    }else{
+      besselKvalue1 = shrinkTVP::unur_bessel_k_nuasympt(part1, p1+1, true, false);
+      besselKvalue2 = shrinkTVP::unur_bessel_k_nuasympt(part1, p1, true, false);
+    }
+    local_shrink(j) = besselKvalue1*std::sqrt(p3)/(besselKvalue2 * std::sqrt(p2));
     if(!local_shrink.is_finite()){
       Rcout << "j: " << j << "\n";
       Rcout << "local_shrink: " << local_shrink(j) << "\n";
