@@ -1,12 +1,12 @@
 #include <RcppArmadillo.h>
 #include <math.h>
 #include <cmath>
-#include <boost/math/special_functions/bessel.hpp>
+//#include <boost/math/special_functions/bessel.hpp>
 #include <boost/math/special_functions/digamma.hpp>
-#include <boost/math/special_functions/bessel_prime.hpp>
+//#include <boost/math/special_functions/bessel_prime.hpp>
 #include "sample_parameters.h"
-#include "Egig_log_is.h"
-#include <iostream>
+//#include "Egig_log_is.h"
+//#include <iostream>
 using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -29,7 +29,7 @@ void update_local_shrink(arma::vec& local_shrink,
   double besselKvalue2;
   for (int j = 0; j < d; j++){
     double p3 = param_vec2(j);
-    double part1 = std::sqrt(p2 * p3);
+    // double part1 = std::sqrt(p2 * p3);
     //if(abs(part1) < 1){
     //  term1 = 2*p1/p3;
     //  term2 = std::log(R::bessel_k(p1 + 1, part1, true)) - (p1+1);
@@ -38,13 +38,25 @@ void update_local_shrink(arma::vec& local_shrink,
     //  local_shrink_inv(j) = std::exp(0.5*std::log(p2) + term2 - term3 - 0.5 * std::log(p3)) - term1;
     //}else{
     //local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
-    besselKvalue1 = R::bessel_k(part1, p1+1, true);
-    besselKvalue2 = R::bessel_k(part1, p1, true);
-    local_shrink(j) = besselKvalue1*std::sqrt(p3)/(besselKvalue2 * std::sqrt(p2));
-    //local_shrink_inv(j) = std::sqrt(p2)*boost::math::cyl_bessel_k(p1+1, part1)/(std::sqrt(p3)*boost::math::cyl_bessel_k(p1, part1)) - 2*p1/p3;
-    local_shrink_inv(j) = std::sqrt(p2)*besselKvalue1/(std::sqrt(p3)*besselKvalue2) - 2*p1/p3;
-    local_shrink_log(j) = Egig_log(p1, p2, p3);
+
+
+
+    // besselKvalue1 = R::bessel_k(part1, p1+1, true);
+    // besselKvalue2 = R::bessel_k(part1, p1, true);
+    // local_shrink(j) = besselKvalue1*std::sqrt(p3)/(besselKvalue2 * std::sqrt(p2));
+    // //local_shrink_inv(j) = std::sqrt(p2)*boost::math::cyl_bessel_k(p1+1, part1)/(std::sqrt(p3)*boost::math::cyl_bessel_k(p1, part1)) - 2*p1/p3;
+    // local_shrink_inv(j) = std::sqrt(p2)*besselKvalue1/(std::sqrt(p3)*besselKvalue2) - 2*p1/p3;
+    // local_shrink_log(j) = Egig_log(p1, p2, p3);
     //}
+
+    // Obtaining namespace of ghyp package
+    Environment pkg = Environment::namespace_env("ghyp");
+    // Picking up Egig() function from ghyp package
+    Function Egig = pkg["Egig"];
+    local_shrink(j) = as<double>(Egig(Named("lambda", p1), Named("chi", p3), Named("psi", p2), Named("func", "x")));
+    local_shrink_inv(j) = as<double>(Egig(Named("lambda", p1), Named("chi", p3), Named("psi", p2), Named("func", "1/x")));
+    local_shrink_log(j) = as<double>(Egig(Named("lambda", p1), Named("chi", p3), Named("psi", p2), Named("func", "logx")));
+
     if(!local_shrink.is_finite()){
       Rcout << "p1: " << p1 << "\n";
       Rcout << "p2: " << p2 << "\n";
