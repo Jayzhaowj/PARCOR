@@ -45,6 +45,13 @@ void update_local_shrink(arma::vec& local_shrink,
     local_shrink_inv(j) = std::sqrt(p2)*besselKvalue1/(std::sqrt(p3)*besselKvalue2) - 2*p1/p3;
     local_shrink_log(j) = Egig_log(p1, p2, p3);
     //}
+    if(!local_shrink.is_finite()){
+      Rcout << "p1: " << p1 << "\n";
+      Rcout << "p2: " << p2 << "\n";
+      Rcout << "p3: " << p3 << "\n";
+      Rcout << "besselKvalue1: " << besselKvalue1 << "\n";
+      Rcout << "besselKvalue2: " << besselKvalue2 << "\n";
+    }
 
   }
 
