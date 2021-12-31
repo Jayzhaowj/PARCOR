@@ -7,7 +7,6 @@
 #include "sample_parameters.h"
 #include "Egig_log_is.h"
 #include <iostream>
-#include <shrinkTVP.h>
 using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
@@ -39,22 +38,9 @@ void update_local_shrink(arma::vec& local_shrink,
     //  local_shrink_inv(j) = std::exp(0.5*std::log(p2) + term2 - term3 - 0.5 * std::log(p3)) - term1;
     //}else{
     //local_shrink(j) = boost::math::cyl_bessel_k(p1+1, part1)*std::sqrt(p3)/(boost::math::cyl_bessel_k(p1, part1) * std::sqrt(p2));
-    if(p1+1 < 50 and part1 < 50){
-      besselKvalue1 = R::bessel_k(part1, p1+1, true);
-      besselKvalue2 = R::bessel_k(part1, p1, true);
-    }else{
-      besselKvalue1 = shrinkTVP::unur_bessel_k_nuasympt(part1, p1+1, true, false);
-      besselKvalue2 = shrinkTVP::unur_bessel_k_nuasympt(part1, p1, true, false);
-    }
+    besselKvalue1 = R::bessel_k(part1, p1+1, true);
+    besselKvalue2 = R::bessel_k(part1, p1, true);
     local_shrink(j) = besselKvalue1*std::sqrt(p3)/(besselKvalue2 * std::sqrt(p2));
-    if(!local_shrink.is_finite()){
-      Rcout << "j: " << j << "\n";
-      Rcout << "local_shrink: " << local_shrink(j) << "\n";
-      Rcout << "all local_shrink: " << local_shrink << "\n";
-      Rcout << "p2: " << p2 << "\n";
-      Rcout << "p3: " << param_vec2 << "\n";
-
-    }
     //local_shrink_inv(j) = std::sqrt(p2)*boost::math::cyl_bessel_k(p1+1, part1)/(std::sqrt(p3)*boost::math::cyl_bessel_k(p1, part1)) - 2*p1/p3;
     local_shrink_inv(j) = std::sqrt(p2)*besselKvalue1/(std::sqrt(p3)*besselKvalue2) - 2*p1/p3;
     local_shrink_log(j) = Egig_log(p1, p2, p3);
