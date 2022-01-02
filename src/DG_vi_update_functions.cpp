@@ -63,7 +63,6 @@ void update_local_shrink(arma::vec& local_shrink,
       Rcout << "p3: " << p3 << "\n";
       Rcout << "besselKvalue1: " << besselKvalue1 << "\n";
       Rcout << "besselKvalue2: " << besselKvalue2 << "\n";
-      stop("There is nan!");
     }
 
   }

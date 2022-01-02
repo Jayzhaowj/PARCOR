@@ -23,7 +23,7 @@ double DG_approx(const arma::vec& param_vec,
   for(int i = 0; i < sample_size; i++){
     proposal(i) = R::rexp(1/b);
     part1(i) = d*std::log(proposal(i)) + d * scale_par_log - d*std::log(2.0) + param_vec_log_sum - 0.5 * scale_par * param_vec_sum - b;
-    part2(i) = std::log(boost::math::tgamma(proposal(i)));
+    part2(i) = boost::math::lgamma(proposal(i));
     r_likl(i) = proposal(i)*(part1(i)) - d*part2(i);
     p_likl(i) = R::dexp(proposal(i), 1/b, true);
     weights(i) = std::exp(r_likl(i) - p_likl(i));
