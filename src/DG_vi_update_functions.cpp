@@ -57,12 +57,13 @@ void update_local_shrink(arma::vec& local_shrink,
     local_shrink_inv(j) = as<double>(Egig(Named("lambda", p1), Named("chi", p3), Named("psi", p2), Named("func", "1/x")));
     local_shrink_log(j) = as<double>(Egig(Named("lambda", p1), Named("chi", p3), Named("psi", p2), Named("func", "logx")));
 
-    if(!local_shrink.is_finite()){
+    if(!local_shrink.is_finite() | !local_shrink_log.is_finite() | !local_shrink_inv.is_finite()){
       Rcout << "p1: " << p1 << "\n";
       Rcout << "p2: " << p2 << "\n";
       Rcout << "p3: " << p3 << "\n";
       Rcout << "besselKvalue1: " << besselKvalue1 << "\n";
       Rcout << "besselKvalue2: " << besselKvalue2 << "\n";
+      stop("There is nan!");
     }
 
   }
