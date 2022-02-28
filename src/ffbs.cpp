@@ -446,7 +446,7 @@ void update_beta_tilde(arma::mat& beta_nc,
     beta_nc.row(t) = arma::trans(mt.col(t) + Bt*(arma::trans(beta_nc.row(t+1)) - mt.col(t)));
     CT.slice(t) = St_tmp(N)/St_tmp(t)*(Ct.slice(t) - Bt*(Ct.slice(t) + I_d - St_tmp(t+1)/St_tmp(N)*CT.slice(t+1))*arma::trans(Bt));
     CT.slice(t) = 0.5*CT.slice(t) + 0.5*arma::trans(CT.slice(t));
-    arma::mat tmp = CT.slice(t) + arma::trans(beta_nc.row(t))*beta_nc.row(t);
+    arma::mat tmp = Ct.slice(t) + arma::trans(beta_nc.row(t))*beta_nc.row(t);
     beta2_nc.row(t) = arma::trans(tmp.diag());
     tmp.diag().zeros();
     beta_nc_cov.row(t) = tmp;
