@@ -352,7 +352,7 @@ void update_beta_tilde(arma::mat& beta_nc,
   arma::vec St_tmp(N+1, arma::fill::zeros);
 
   //double St_sq;
-  double S_comp = 0.0;
+  //double S_comp = 0.0;
 
 
   arma::mat theta_sr_diag = arma::diagmat(theta_sr);
@@ -387,8 +387,10 @@ void update_beta_tilde(arma::mat& beta_nc,
     //Qt_inv_sq = std::sqrt(1.0/Qt);
     et = yt_star(t-1) - ft(t-1);
     //S_comp += St_sq * Qt_inv_sq * et * et * Qt_inv_sq * St_sq;
-    S_comp += St_tmp(t-1) *  et * et / Qt;
-    St_tmp(t) = (n_0*S_0 + S_comp)/(n_0 + t);
+    n_0 += 1;
+    St_tmp(t) = St_tmp(t-1) + St_tmp(t-1)/n_0*(et*et/Qt - 1);
+    //S_comp += St_tmp(t-1) *  et * et / Qt;
+    //St_tmp(t) = (n_0*S_0 + S_comp)/(n_0 + t);
     // if(std::isnan(St_tmp(t))){
     //   Rcout << "t: " << t << "\n";
     //   Rcout << "n_0*S_0: " << n_0*S_0 << "\n";
@@ -406,7 +408,7 @@ void update_beta_tilde(arma::mat& beta_nc,
     //At = Rt.slice(t)*arma::trans(Ft.row(t-1))/Qt;
     At = (Ct.slice(t-1) + I_d)*arma::trans(Ft.row(t-1))/Qt;
     mt.col(t) = mt.col(t-1) + At*et;
-    Ct.slice(t) = Ct.slice(t-1) + I_d - At*Qt*arma::trans(At);
+    Ct.slice(t) = (St_tmp(t)/St_tmp(t-1))*(Ct.slice(t-1) + I_d - At*Qt*arma::trans(At));
     Ct.slice(t) = 0.5*Ct.slice(t) + 0.5*arma::trans(Ct.slice(t));
     // if((Ct.slice(t)).has_nan()){
     //   Rcout << "t: " << t << "\n";
@@ -442,9 +444,9 @@ void update_beta_tilde(arma::mat& beta_nc,
     Bt = Ct.slice(t) * Rtp1_inv;
     //mT.col(t) = mt.col(t) + Bt*(mT.col(t+1) - mt.col(t));
     beta_nc.row(t) = arma::trans(mt.col(t) + Bt*(arma::trans(beta_nc.row(t+1)) - mt.col(t)));
-    CT.slice(t) = Ct.slice(t) - Bt*(Ct.slice(t) + I_d - CT.slice(t+1))*arma::trans(Bt);
+    CT.slice(t) = St_tmp(N)/St_tmp(t)*(Ct.slice(t) - Bt*(Ct.slice(t) + I_d - St_tmp(t+1)/St_tmp(N)*CT.slice(t+1))*arma::trans(Bt));
     CT.slice(t) = 0.5*CT.slice(t) + 0.5*arma::trans(CT.slice(t));
-    arma::mat tmp = Ct.slice(t) + arma::trans(beta_nc.row(t))*beta_nc.row(t);
+    arma::mat tmp = CT.slice(t) + arma::trans(beta_nc.row(t))*beta_nc.row(t);
     beta2_nc.row(t) = arma::trans(tmp.diag());
     tmp.diag().zeros();
     beta_nc_cov.row(t) = tmp;
